@@ -1,3 +1,13 @@
+// Global Error Handler for Debugging
+window.addEventListener('error', function(e) {
+    const tb = document.getElementById('tableBody');
+    if(tb) tb.innerHTML = `<tr><td colspan="5" style="color:red; padding: 2rem;">Erro de Código: ${e.message}</td></tr>`;
+});
+window.addEventListener('unhandledrejection', function(e) {
+    const tb = document.getElementById('tableBody');
+    if(tb) tb.innerHTML = `<tr><td colspan="5" style="color:red; padding: 2rem;">Erro de Banco/Conexão: ${e.reason}</td></tr>`;
+});
+
 // ATENÇÃO: COLOQUE SUA CHAVE AQUI
 const SUPABASE_URL = 'https://kqwijexdskiilhfxkbvk.supabase.co';
 // Cole a sua API Key Pública (Anon Key) entre as aspas abaixo:
