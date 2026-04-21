@@ -1,7 +1,7 @@
 // ATENÇÃO: COLOQUE SUA CHAVE AQUI
 const SUPABASE_URL = 'https://kqwijexdskiilhfxkbvk.supabase.co';
 // Cole a sua API Key Pública (Anon Key) entre as aspas abaixo:
-const SUPABASE_KEY = 'SUA_CHAVE_AQUI';
+const SUPABASE_KEY = 'sb_publishable_gYQ12En3DdbmRv7X9v9CnA_MJuN2cMT';
 
 // Initialize Supabase Client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
