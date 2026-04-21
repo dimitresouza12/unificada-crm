@@ -16,6 +16,26 @@ const SUPABASE_KEY = 'sb_publishable_gYQ12En3DdbmRv7X9v9CnA_MJuN2cMT';
 // Initialize Supabase Client
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Verifica Autenticação
+async function checkAuth() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) {
+        window.location.href = 'login.html';
+    }
+}
+checkAuth();
+
+// Logout
+document.addEventListener('DOMContentLoaded', () => {
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            window.location.href = 'login.html';
+        });
+    }
+});
+
 // DOM Elements
 const tableBody = document.getElementById('tableBody');
 const resultsCount = document.getElementById('resultsCount');
@@ -38,11 +58,11 @@ function formatDate(dateString) {
 
 // Helper function to get status badge class
 function getStatusClass(status) {
-    const s = String(status).toLowerCase();
+    if (!status) return 'status-pendente';
+    const s = String(status).toLowerCase().trim();
     if (s.includes('agendado') || s.includes('confirmado')) return 'status-agendado';
-    if (s.includes('pendente') || s.includes('avaliação')) return 'status-pendente';
-    if (s.includes('cancelado')) return 'status-cancelado';
-    if (s.includes('concluído') || s.includes('finalizado')) return 'status-concluido';
+    if (s.includes('concluído') || s.includes('finalizado') || s === 'true' || s === 'ativo') return 'status-concluido';
+    if (s.includes('cancelado') || s.includes('pausado') || s === 'false') return 'status-cancelado';
     return 'status-pendente'; // default
 }
 
@@ -113,14 +133,15 @@ function renderTable(data) {
     const html = data.map(patient => `
         <tr>
             <td style="font-weight: 500;">${patient.patient_name || patient.nome || 'Desconhecido'}</td>
-            <td>${patient.phone || patient.telefone || '-'}</td>
+            <td>${patient.phone || patient.telefone || patient.identifier || '-'}</td>
             <td>${patient.procedure || patient.procedimento || 'Não informado'}</td>
             <td>
                 <span class="status-badge ${getStatusClass(patient.status || patient.ai_service)}">
                     ${patient.status || patient.ai_service || 'Pendente'}
                 </span>
             </td>
-            <td>${formatDate(patient.appointment_date || patient.created_at || patient.data_agendamento)}</td>
+            <td>${formatDate(patient.created_at)}</td>
+            <td>${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
         </tr>
     `).join('');
 
@@ -255,16 +276,17 @@ document.getElementById('btnExportar').addEventListener('click', () => {
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Paciente,Telefone,Procedimento,Status,Data/Hora\n";
+    csvContent += "Paciente,Telefone,Procedimento,Status,Data Conversa,Data Agendamento\n";
 
     allPatients.forEach(p => {
         const name = (p.patient_name || p.nome || 'Desconhecido').replace(/,/g, '');
-        const phone = (p.phone || p.telefone || '-').replace(/,/g, '');
+        const phone = (p.phone || p.telefone || p.identifier || '-').replace(/,/g, '');
         const proc = (p.procedure || p.procedimento || 'Não informado').replace(/,/g, '');
         const status = (p.status || p.ai_service || 'Pendente').replace(/,/g, '');
-        const date = formatDate(p.appointment_date || p.created_at || p.data_agendamento).replace(/,/g, '');
+        const dateConv = formatDate(p.created_at).replace(/,/g, '');
+        const dateAgend = formatDate(p.appointment_date || p.data_agendamento).replace(/,/g, '');
         
-        csvContent += `${name},${phone},${proc},${status},${date}\n`;
+        csvContent += `${name},${phone},${proc},${status},${dateConv},${dateAgend}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);

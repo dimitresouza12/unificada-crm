@@ -32,7 +32,7 @@
                 <div class="avatar">CU</div>
                 <div class="user-info">
                     <span class="name">Recepção</span>
-                    <span class="role">Admin</span>
+                    <button id="btnLogout" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.8rem; text-align:left; text-decoration:underline;">Sair do Sistema</button>
                 </div>
             </div>
         </header>
@@ -67,13 +67,14 @@
                                 <th>Telefone</th>
                                 <th>Procedimento</th>
                                 <th>Status</th>
-                                <th>Data/Hora</th>
+                                <th>Data da Conversa</th>
+                                <th>Data Agendamento</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <!-- Rows will be populated by app.js -->
                             <tr>
-                                <td colspan="5" class="loading-state">Carregando dados...</td>
+                                <td colspan="6" class="loading-state">Carregando dados...</td>
                             </tr>
                         </tbody>
                     </table>
