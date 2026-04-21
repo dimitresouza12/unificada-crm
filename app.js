@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // PWA Service Worker Registration
+/*
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(registration => {
@@ -177,6 +178,7 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+*/
 
 // Button Interactivity
 document.getElementById('btnNovoAgendamento').addEventListener('click', () => {
