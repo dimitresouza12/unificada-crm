@@ -64,14 +64,16 @@ body {
     color: var(--primary);
 }
 
-.logo i {
-    font-size: 1.5rem;
+.brand-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
 }
 
-.logo h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary);
+.brand-logo-large {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
 }
 
 .nav-links {
