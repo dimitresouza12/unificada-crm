@@ -177,24 +177,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// PWA Service Worker Registration
-/*
+// Remove PWA Registration (Kill Cache)
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('Service Worker registrado com sucesso: ', registration.scope);
-    }).catch(err => {
-      console.log('Falha ao registrar o Service Worker: ', err);
-    });
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(let registration of registrations) {
+      registration.unregister();
+    }
   });
 }
-*/
 
-// Button Interactivity
-document.getElementById('btnNovoAgendamento').addEventListener('click', () => {
-    alert('🚀 Funcionalidade em desenvolvimento: Em breve você poderá adicionar agendamentos manuais por aqui!');
+// Modal Interactivity
+const modal = document.getElementById('modalNovoAgendamento');
+const btnNovoAgendamento = document.getElementById('btnNovoAgendamento');
+const btnCloseModal = document.getElementById('btnCloseModal');
+const btnCancelModal = document.getElementById('btnCancelModal');
+const formNovoAgendamento = document.getElementById('formNovoAgendamento');
+
+function openModal() {
+    modal.classList.remove('hidden');
+}
+
+function closeModal() {
+    modal.classList.add('hidden');
+    formNovoAgendamento.reset();
+}
+
+btnNovoAgendamento.addEventListener('click', openModal);
+btnCloseModal.addEventListener('click', closeModal);
+btnCancelModal.addEventListener('click', closeModal);
+
+// Handle Form Submit (Insert into Supabase)
+formNovoAgendamento.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
+        alert('Não é possível salvar: Chave do Supabase não configurada.');
+        return;
+    }
+
+    const btnSalvar = document.getElementById('btnSalvarAgendamento');
+    const originalText = btnSalvar.innerText;
+    btnSalvar.innerText = 'Salvando...';
+    btnSalvar.disabled = true;
+
+    const newPatient = {
+        patient_name: document.getElementById('inputNome').value,
+        phone: document.getElementById('inputTelefone').value,
+        procedure: document.getElementById('inputProcedimento').value,
+        status: document.getElementById('inputStatus').value,
+        appointment_date: document.getElementById('inputData').value,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabaseClient
+            .from('chats')
+            .insert([newPatient]);
+
+        if (error) throw error;
+        
+        closeModal();
+        fetchPatients();
+        
+    } catch (err) {
+        alert('Erro ao salvar agendamento: ' + err.message);
+    } finally {
+        btnSalvar.innerText = originalText;
+        btnSalvar.disabled = false;
+    }
 });
 
+// Export to CSV Functionality
 document.getElementById('btnExportar').addEventListener('click', () => {
-    alert('📊 Funcionalidade em desenvolvimento: Em breve você poderá exportar a tabela para Excel/CSV!');
+    if (allPatients.length === 0) {
+        alert('Não há dados para exportar.');
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Paciente,Telefone,Procedimento,Status,Data/Hora\n";
+
+    allPatients.forEach(p => {
+        const name = (p.patient_name || p.nome || 'Desconhecido').replace(/,/g, '');
+        const phone = (p.phone || p.telefone || '-').replace(/,/g, '');
+        const proc = (p.procedure || p.procedimento || 'Não informado').replace(/,/g, '');
+        const status = (p.status || p.ai_service || 'Pendente').replace(/,/g, '');
+        const date = formatDate(p.appointment_date || p.created_at || p.data_agendamento).replace(/,/g, '');
+        
+        csvContent += `${name},${phone},${proc},${status},${date}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "agendamentos_clinica.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
