@@ -1,0 +1,16 @@
+{
+  "name": "Clínica Unificada CRM",
+  "short_name": "CRM Clínica",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#7C3AED",
+  "description": "Painel de Gestão da Clínica Unificada",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2818/2818366.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

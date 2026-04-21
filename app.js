@@ -1,7 +1,7 @@
 // ATENÇÃO: COLOQUE SUA CHAVE AQUI
 const SUPABASE_URL = 'https://kqwijexdskiilhfxkbvk.supabase.co';
 // Cole a sua API Key Pública (Anon Key) entre as aspas abaixo:
-const SUPABASE_KEY = 'sb_publishable_gYQ12En3DdbmRv7X9v9CnA_MJuN2cMT';
+const SUPABASE_KEY = 'SUA_CHAVE_AQUI';
 
 // Initialize Supabase Client
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -165,4 +165,24 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         fetchPatients();
     }
+});
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      console.log('Service Worker registrado com sucesso: ', registration.scope);
+    }).catch(err => {
+      console.log('Falha ao registrar o Service Worker: ', err);
+    });
+  });
+}
+
+// Button Interactivity
+document.getElementById('btnNovoAgendamento').addEventListener('click', () => {
+    alert('🚀 Funcionalidade em desenvolvimento: Em breve você poderá adicionar agendamentos manuais por aqui!');
+});
+
+document.getElementById('btnExportar').addEventListener('click', () => {
+    alert('📊 Funcionalidade em desenvolvimento: Em breve você poderá exportar a tabela para Excel/CSV!');
 });

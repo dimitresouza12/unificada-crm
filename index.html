@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clínica Unificada - CRM</title>
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7C3AED">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2818/2818366.png">
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +26,6 @@
             </div>
             <nav class="nav-links">
                 <a href="#" class="active">Painel</a>
-                <a href="#">Pacientes</a>
-                <a href="#">Agendamentos</a>
             </nav>
             <div class="user-profile">
                 <div class="avatar">CU</div>
@@ -39,10 +41,10 @@
             <div class="page-header">
                 <h2>Pacientes & Agendamentos</h2>
                 <div class="header-actions">
-                    <button class="btn btn-primary">
+                    <button class="btn btn-primary" id="btnNovoAgendamento">
                         <i class="ph ph-plus"></i> Novo Agendamento
                     </button>
-                    <button class="btn btn-secondary">
+                    <button class="btn btn-secondary" id="btnExportar">
                         <i class="ph ph-export"></i> Exportar
                     </button>
                 </div>
