@@ -66,7 +66,7 @@ async function fetchPatients() {
         const { data, error } = await supabaseClient
             .from('chats') // Assumed table name
             .select('*')
-            .order('updated_at', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(50);
 
         if (error) throw error;
@@ -120,7 +120,7 @@ function renderTable(data) {
                     ${patient.status || patient.ai_service || 'Pendente'}
                 </span>
             </td>
-            <td>${formatDate(patient.appointment_date || patient.updated_at)}</td>
+            <td>${formatDate(patient.appointment_date || patient.created_at || patient.data_agendamento)}</td>
         </tr>
     `).join('');
 
