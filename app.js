@@ -14,7 +14,7 @@ const SUPABASE_URL = 'https://kqwijexdskiilhfxkbvk.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_gYQ12En3DdbmRv7X9v9CnA_MJuN2cMT';
 
 // Initialize Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // DOM Elements
 const tableBody = document.getElementById('tableBody');
@@ -63,7 +63,7 @@ async function fetchPatients() {
     try {
         // Fetch from 'chats' or whichever table contains the lead info.
         // Adjust the select query based on the exact columns in the user's Supabase.
-        const { data, error } = await supabase
+        const { data, error } = await supabaseClient
             .from('chats') // Assumed table name
             .select('*')
             .order('updated_at', { ascending: false })
@@ -75,7 +75,7 @@ async function fetchPatients() {
         renderTable(allPatients);
         
         // Subscribe to real-time changes
-        supabase
+        supabaseClient
             .channel('public:chats')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, payload => {
                 console.log('Change received!', payload);
