@@ -42,6 +42,7 @@ const resultsCount = document.getElementById('resultsCount');
 const searchInput = document.getElementById('searchInput');
 
 let allPatients = [];
+let activeTab = 'atendimentos';
 
 // Helper function to format dates
 function formatDate(dateString) {
@@ -140,21 +141,27 @@ function renderTable(data, shouldPopulateDentists = true) {
         if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
 
         const dentista = getDentistName(patient);
-        const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+        let patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+        
+        // UX: Identificação de Novo Lead
+        const isNewLead = patientName === 'Desconhecido' || cleanPhone === '=';
+        if (isNewLead) {
+            patientName = `<span style="color: var(--primary); background: var(--primary-light); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 6px;">NOVO</span> ${patientName}`;
+        }
 
         return `
         <tr>
-            <td class="col-name" style="font-weight: 500;">${patientName}</td>
-            <td class="col-phone">${cleanPhone}</td>
-            <td class="col-proc">${patient.procedure || patient.procedimento || 'Não informado'}</td>
-            <td class="col-dentist"><span style="color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; white-space: nowrap;">${dentista}</span></td>
+            <td class="col-name" title="${patientName.replace(/<[^>]*>/g, '')}" style="font-weight: 500;">${patientName}</td>
+            <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
+            <td class="col-proc" title="${patient.procedure || patient.procedimento || 'Não informado'}">${patient.procedure || patient.procedimento || 'Não informado'}</td>
+            <td class="col-dentist" title="${dentista}"><span style="color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; white-space: nowrap;">${dentista}</span></td>
             <td class="col-status">
                 <span class="status-badge ${getStatusClass(patient.status || patient.ai_service)}">
                     ${patient.status || patient.ai_service || 'Pendente'}
                 </span>
             </td>
-            <td class="col-date">${formatDate(patient.created_at)}</td>
-            <td class="col-date">${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
+            <td class="col-date" title="${formatDate(patient.created_at)}">${formatDate(patient.created_at)}</td>
+            <td class="col-date" title="${formatDate(patient.appointment_date || patient.data_agendamento)}">${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
         </tr>
         `;
     }).join('');
@@ -178,31 +185,35 @@ function renderTable(data, shouldPopulateDentists = true) {
 
     if (pacientes.length === 0) {
         document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
+    const htmlPacientes = pacientes.map(patient => {
+        let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
+        if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+        const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+        const recordId = patient.id || cleanPhone;
+        const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
+
+        return `
+        <tr>
+            <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
+            <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
+            <td class="col-actions">
+                <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
+                    <i class="ph ph-file-text"></i> Prontuário
+                </button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+
+    document.getElementById('tableBodyAtendimentos').innerHTML = htmlAtendimentos || `<tr><td colspan="7" class="loading-state">Nenhum atendimento encontrado.</td></tr>`;
+    document.getElementById('tableBodyPacientes').innerHTML = htmlPacientes || `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
+    
+    // UX: Rodapé contextual
+    if (activeTab === 'atendimentos') {
+        resultsCount.textContent = `Mostrando ${data.length} atendimentos registrados`;
     } else {
-        const htmlPacientes = pacientes.map(patient => {
-            let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
-            if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
-
-            const recordId = patient.id || cleanPhone;
-            const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
-            const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
-
-            return `
-            <tr>
-                <td class="col-name" style="font-weight: 500;">${patientName}</td>
-                <td class="col-phone">${cleanPhone}</td>
-                <td class="col-actions">
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
-                        <i class="ph ph-file-text"></i> Prontuário
-                    </button>
-                </td>
-            </tr>
-            `;
-        }).join('');
-        document.getElementById('tableBodyPacientes').innerHTML = htmlPacientes;
+        resultsCount.textContent = `Mostrando ${pacientes.length} fichas de pacientes`;
     }
-
-    resultsCount.textContent = `Mostrando ${data.length} atendimentos e ${pacientes.length} pacientes`;
 }
 
 // Central Filtering Logic
@@ -224,11 +235,12 @@ function applyFilters() {
         return matchesSearch && matchesStatus && matchesDentist;
     });
 
-    renderTable(filtered, false); // false to avoid re-populating dentist select
+    renderTable(filtered, false);
 }
 
 function populateDentistFilter(data) {
     const select = document.getElementById('filterDentista');
+    if (!select) return;
     const currentValue = select.value;
     const dentists = [...new Set(data.map(p => getDentistName(p)))].filter(d => d !== 'Não definida');
     
@@ -247,65 +259,48 @@ searchInput.addEventListener('input', applyFilters);
 document.getElementById('filterStatus').addEventListener('change', applyFilters);
 document.getElementById('filterDentista').addEventListener('change', applyFilters);
 
-// Mock data initialization (Remove this block when Supabase Key is ready)
-function renderMockData() {
-    const mockData = [
-        { patient_name: 'Ana Silva', phone: '(11) 98765-4321', procedure: 'Check-up & Limpeza', status: 'Agendado', appointment_date: '2023-10-25T10:00:00' },
-        { patient_name: 'Carlos Pereira', phone: '(11) 91234-5678', procedure: 'Tratamento de Canal', status: 'Confirmado', appointment_date: '2023-10-26T14:30:00' },
-        { patient_name: 'Beatriz Souza', phone: '(11) 99887-6655', procedure: 'Clareamento Dental', status: 'Concluído', appointment_date: '2023-10-24T09:15:00' },
-        { patient_name: 'João Oliveira', phone: '(11) 97766-5544', procedure: 'Restauração', status: 'Pendente', appointment_date: '2023-10-27T11:00:00' },
-        { patient_name: 'Maria Lopes', phone: '(11) 95544-3322', procedure: 'Extração', status: 'Cancelado', appointment_date: '2023-10-28T16:00:00' },
-    ];
-    
-    if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
-        allPatients = mockData;
-        renderTable(allPatients);
-        
-        // Append a warning about mock data
-        const warning = document.createElement('div');
-        warning.style.padding = '1rem';
-        warning.style.backgroundColor = '#FEF3C7';
-        warning.style.color = '#92400E';
-        warning.style.textAlign = 'center';
-        warning.style.fontWeight = '500';
-        warning.innerHTML = 'Atenção: Exibindo dados de teste. Para ver os dados reais da clínica, cole a Anon Key no arquivo app.js';
-        document.querySelector('.content').prepend(warning);
-    } else {
-        fetchPatients();
-    }
-}
-
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {
-    // If key is not set, load mock data to show the UI
-    if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
-        renderMockData();
-    } else {
-        fetchPatients();
-    }
+    fetchPatients();
 });
 
-// --- Lógica de Navegação das Abas ---
+// Tab Switching Logic
+const tabAtendimentos = document.getElementById('tabAtendimentos');
+const tabPacientes = document.getElementById('tabPacientes');
+
+tabAtendimentos.addEventListener('click', () => {
+    activeTab = 'atendimentos';
+    tabAtendimentos.classList.add('active');
+    tabPacientes.classList.add('active-tab');
+    tabPacientes.classList.remove('active');
+    document.getElementById('tableAtendimentos').parentElement.classList.remove('hidden');
+    document.getElementById('tablePacientes').parentElement.classList.add('hidden');
+    document.querySelector('.filters-group').style.display = 'flex';
+    applyFilters();
+});
+
+tabPacientes.addEventListener('click', () => {
+    activeTab = 'pacientes';
+    tabPacientes.classList.add('active');
+    tabAtendimentos.classList.remove('active');
+    document.getElementById('tableAtendimentos').parentElement.classList.add('hidden');
+    document.getElementById('tablePacientes').parentElement.classList.remove('hidden');
+    document.querySelector('.filters-group').style.display = 'none';
+    applyFilters();
+});
+
+// --- Lógica do Prontuário Digital (Ficha Clínica) ---
+
+// Sub-tabs switching
 document.addEventListener('click', (e) => {
-    if(e.target.classList.contains('tab-btn')) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => {
-            c.classList.remove('active');
-            c.style.display = 'none';
-        });
+    if (e.target.classList.contains('pront-tab-btn')) {
+        document.querySelectorAll('.pront-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.pront-tab-content').forEach(c => c.classList.add('hidden'));
         
         e.target.classList.add('active');
-        const target = document.getElementById(e.target.getAttribute('data-target'));
-        if(target) {
-            target.classList.add('active');
-            target.style.display = 'block';
-        }
+        document.getElementById(e.target.getAttribute('data-tab')).classList.remove('hidden');
     }
 });
-
-// --- Lógica do Prontuário Digital ---
-
-// --- Lógica do Prontuário Digital Evoluído ---
 
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('.open-prontuario');
@@ -316,7 +311,10 @@ document.addEventListener('click', (e) => {
         
         document.getElementById('prontuarioPacienteId').value = id;
         document.getElementById('prontuarioPacienteNome').textContent = '- ' + name;
-        document.getElementById('inputProntuarioText').value = ''; // Limpa para nova nota
+        document.getElementById('inputProntuarioText').value = '';
+        
+        // Reset sub-tabs to first one
+        document.querySelectorAll('.pront-tab-btn')[0].click();
         
         renderProntuarioContent(rawContent);
         
@@ -324,7 +322,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Função para renderizar o histórico e as fotos do JSON
 function renderProntuarioContent(rawContent) {
     const timelineContainer = document.getElementById('timelineContainer');
     const photoGallery = document.getElementById('photoGallery');
@@ -332,24 +329,50 @@ function renderProntuarioContent(rawContent) {
     timelineContainer.innerHTML = '';
     photoGallery.innerHTML = '';
     
-    let prontData = { entries: [], photos: [] };
+    let prontData = { entries: [], photos: [], fields: {} };
     
     try {
         if (rawContent && rawContent.startsWith('{')) {
             prontData = JSON.parse(rawContent);
         } else if (rawContent) {
-            // Legado: se for apenas texto, transforma na primeira entrada
             prontData.entries.push({ date: new Date().toISOString(), text: rawContent });
         }
     } catch (e) {
         console.error("Erro ao ler prontuário:", e);
     }
     
-    // Renderizar Timeline
-    if (prontData.entries.length === 0) {
+    // Fill Fields
+    const fieldIds = [
+        'p-cpf', 'p-rg', 'p-nasc', 'p-genero', 'p-ocupacao', 'p-endereco', 'p-indicado', 'p-inicio', 'p-emergencia',
+        'a-saude', 'a-tratamento', 'a-medicamentos', 'a-alergia', 'a-pressao', 'a-fumante', 'a-gengiva', 'a-habitos',
+        'e-higiene', 'e-halitose', 'e-mucosa', 'e-palato', 'e-obs', 'p-plano', 'p-contrato'
+    ];
+    
+    const contractTemplate = `CONTRATO DE PRESTAÇÃO DE SERVIÇOS ODONTOLÓGICOS
+
+CONTRATADA: Clínica Unificada
+CONTRATANTE: [NOME DO PACIENTE]
+
+CLÁUSULA 1ª: O presente contrato tem por objeto a prestação de serviços odontológicos conforme plano de tratamento anexo.
+CLÁUSULA 2ª: O CONTRATANTE compromete-se a comparecer nas datas e horários agendados.
+CLÁUSULA 3ª: [ADICIONE SUAS CLÁUSULAS AQUI...]
+
+Assinatura: __________________________________
+Data: ${new Date().toLocaleDateString('pt-BR')}`;
+
+    fieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            let val = (prontData.fields && prontData.fields[id]) ? prontData.fields[id] : '';
+            if (id === 'p-contrato' && !val) val = contractTemplate.replace('[NOME DO PACIENTE]', document.getElementById('prontuarioPacienteNome').textContent.replace('- ', ''));
+            el.value = val;
+        }
+    });
+    
+    // Render Timeline
+    if (!prontData.entries || prontData.entries.length === 0) {
         timelineContainer.innerHTML = '<div class="timeline-empty">Nenhuma anotação anterior.</div>';
     } else {
-        // Ordena por data (mais recente primeiro)
         prontData.entries.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(entry => {
             const item = document.createElement('div');
             item.className = 'timeline-item';
@@ -361,7 +384,7 @@ function renderProntuarioContent(rawContent) {
         });
     }
     
-    // Renderizar Fotos
+    // Render Photos
     if (prontData.photos && prontData.photos.length > 0) {
         prontData.photos.forEach((url, index) => {
             const photoItem = document.createElement('div');
@@ -374,19 +397,68 @@ function renderProntuarioContent(rawContent) {
         });
     }
     
-    // Guardar dados atuais no form para facilitar o update
     document.getElementById('formProntuario').setAttribute('data-current-json', JSON.stringify(prontData));
+    
+    renderOdontograma(prontData.odontograma || {});
 }
 
-document.getElementById('btnCloseProntuario')?.addEventListener('click', () => {
-    document.getElementById('modalProntuario').classList.add('hidden');
-});
-document.getElementById('btnCancelProntuario')?.addEventListener('click', () => {
-    document.getElementById('modalProntuario').classList.add('hidden');
+function renderOdontograma(savedState) {
+    const sup = document.getElementById('teeth-superior');
+    const inf = document.getElementById('teeth-inferior');
+    if (!sup || !inf) return;
+
+    sup.innerHTML = '';
+    inf.innerHTML = '';
+
+    const upperTeeth = [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28];
+    const lowerTeeth = [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38];
+
+    const createTooth = (num) => {
+        const status = savedState[num] || 'higido';
+        const div = document.createElement('div');
+        div.className = `tooth status-${status}`;
+        div.setAttribute('data-num', num);
+        div.innerHTML = `<div class="tooth-icon">${num}</div><span class="tooth-num">${num}</span>`;
+        div.onclick = () => openToothSelector(num);
+        return div;
+    };
+
+    upperTeeth.forEach(num => sup.appendChild(createTooth(num)));
+    lowerTeeth.forEach(num => inf.appendChild(createTooth(num)));
+}
+
+let activeTooth = null;
+function openToothSelector(num) {
+    activeTooth = num;
+    document.getElementById('selectedToothNum').textContent = num;
+    document.getElementById('toothSelector').classList.remove('hidden');
+}
+
+// Selector options click
+document.querySelectorAll('.selector-options button').forEach(btn => {
+    btn.onclick = () => {
+        const status = btn.getAttribute('data-status');
+        const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
+        let prontData = JSON.parse(currentJsonStr || '{}');
+        
+        if (!prontData.odontograma) prontData.odontograma = {};
+        prontData.odontograma[activeTooth] = status;
+        
+        document.getElementById('formProntuario').setAttribute('data-current-json', JSON.stringify(prontData));
+        document.getElementById('toothSelector').classList.add('hidden');
+        renderOdontograma(prontData.odontograma);
+    };
 });
 
-document.getElementById('formProntuario')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
+// Close selector on outside click
+document.addEventListener('mousedown', (e) => {
+    const selector = document.getElementById('toothSelector');
+    if (selector && !selector.contains(e.target) && !e.target.closest('.tooth')) {
+        selector.classList.add('hidden');
+    }
+});
+
+document.getElementById('btnSalvarProntuario')?.addEventListener('click', async (e) => {
     if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
         alert('Modo de teste: o prontuário não será salvo.');
         return;
@@ -396,42 +468,49 @@ document.getElementById('formProntuario')?.addEventListener('submit', async (e) 
     const originalText = btnSalvar.textContent;
     const noteText = document.getElementById('inputProntuarioText').value.trim();
     
-    if (!noteText) {
-        alert("Digite uma anotação para salvar.");
-        return;
-    }
-
     btnSalvar.textContent = 'Salvando...';
     btnSalvar.disabled = true;
 
     const id = document.getElementById('prontuarioPacienteId').value;
     const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
-    let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[]}');
+    let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[], "fields": {}}');
     
-    // Adicionar nova entrada
-    prontData.entries.push({
-        date: new Date().toISOString(),
-        text: noteText
+    // 1. Coletar campos da Ficha
+    const fieldIds = [
+        'p-cpf', 'p-rg', 'p-nasc', 'p-genero', 'p-ocupacao', 'p-endereco', 'p-indicado', 'p-inicio', 'p-emergencia',
+        'a-saude', 'a-tratamento', 'a-medicamentos', 'a-alergia', 'a-pressao', 'a-fumante', 'a-gengiva', 'a-habitos',
+        'e-higiene', 'e-halitose', 'e-mucosa', 'e-palato', 'e-obs', 'p-plano', 'p-contrato'
+    ];
+    
+    if (!prontData.fields) prontData.fields = {};
+    fieldIds.forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) prontData.fields[fid] = el.value;
     });
 
+    // 2. Adicionar nova entrada na timeline se houver texto
+    if (noteText) {
+        prontData.entries.push({
+            date: new Date().toISOString(),
+            text: noteText
+        });
+    }
+
     try {
-        // Tenta achar pelo id ou telefone
         let query = supabaseClient.from('chats').update({ prontuario: JSON.stringify(prontData) });
-        
         if (id.includes('-') || isNaN(id)) {
             query = query.eq('id', id);
         } else {
-            query = query.eq('phone', id); // Se for o telefone
+            query = query.eq('phone', id);
         }
 
         const { error } = await query;
         if (error) throw error;
         
-        // Sucesso: atualiza a UI local
         document.getElementById('inputProntuarioText').value = '';
         renderProntuarioContent(JSON.stringify(prontData));
         fetchPatients();
-        alert("Evolução salva com sucesso!");
+        alert("Ficha Clínica salva com sucesso!");
         
     } catch (err) {
         alert('Erro ao salvar prontuário: ' + err.message);
@@ -441,7 +520,7 @@ document.getElementById('formProntuario')?.addEventListener('submit', async (e) 
     }
 });
 
-// Lógica de Upload de Fotos
+// Photo Upload Logic
 document.getElementById('inputPhoto')?.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -463,19 +542,16 @@ document.getElementById('inputPhoto')?.addEventListener('change', async (e) => {
         const fileName = `${id}_${Date.now()}.${fileExt}`;
         const filePath = `pacientes/${fileName}`;
 
-        // 1. Upload para o Storage
         const { error: uploadError } = await supabaseClient.storage
             .from('pacientes')
             .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
-        // 2. Pegar URL Pública
         const { data: { publicUrl } } = supabaseClient.storage
             .from('pacientes')
             .getPublicUrl(filePath);
 
-        // 3. Atualizar o JSON no Banco
         const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
         let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[]}');
         
@@ -497,49 +573,40 @@ document.getElementById('inputPhoto')?.addEventListener('change', async (e) => {
 
     } catch (err) {
         console.error(err);
-        alert('Erro no upload: ' + err.message + '. Verifique se o bucket "pacientes" existe e é público.');
+        alert('Erro no upload: ' + err.message);
     } finally {
         label.innerHTML = originalLabel;
         label.style.opacity = '1';
-        e.target.value = ''; // limpa input
+        e.target.value = '';
     }
 });
 
-// Remove PWA Registration (Kill Cache)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(function(registrations) {
-    for(let registration of registrations) {
-      registration.unregister();
-    }
-  });
-}
-
-// Modal Interactivity
+// Modal Interactivity (Novo Agendamento)
 const modal = document.getElementById('modalNovoAgendamento');
 const btnNovoAgendamento = document.getElementById('btnNovoAgendamento');
 const btnCloseModal = document.getElementById('btnCloseModal');
 const btnCancelModal = document.getElementById('btnCancelModal');
 const formNovoAgendamento = document.getElementById('formNovoAgendamento');
 
-function openModal() {
-    modal.classList.remove('hidden');
-}
+function openModal() { modal.classList.remove('hidden'); }
+function closeModal() { modal.classList.add('hidden'); formNovoAgendamento.reset(); }
 
-function closeModal() {
-    modal.classList.add('hidden');
-    formNovoAgendamento.reset();
-}
+btnNovoAgendamento?.addEventListener('click', openModal);
+btnCloseModal?.addEventListener('click', closeModal);
+btnCancelModal?.addEventListener('click', closeModal);
 
-btnNovoAgendamento.addEventListener('click', openModal);
-btnCloseModal.addEventListener('click', closeModal);
-btnCancelModal.addEventListener('click', closeModal);
+document.getElementById('btnCloseProntuario')?.addEventListener('click', () => {
+    document.getElementById('modalProntuario').classList.add('hidden');
+});
+document.getElementById('btnCancelProntuario')?.addEventListener('click', () => {
+    document.getElementById('modalProntuario').classList.add('hidden');
+});
 
-// Handle Form Submit (Insert into Supabase)
-formNovoAgendamento.addEventListener('submit', async (e) => {
+// Handle Form Submit (New Appointment)
+formNovoAgendamento?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
     if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
-        alert('Não é possível salvar: Chave do Supabase não configurada.');
+        alert('Chave do Supabase não configurada.');
         return;
     }
 
@@ -559,15 +626,10 @@ formNovoAgendamento.addEventListener('submit', async (e) => {
     };
 
     try {
-        const { error } = await supabaseClient
-            .from('chats')
-            .insert([newPatient]);
-
+        const { error } = await supabaseClient.from('chats').insert([newPatient]);
         if (error) throw error;
-        
         closeModal();
         fetchPatients();
-        
     } catch (err) {
         alert('Erro ao salvar agendamento: ' + err.message);
     } finally {
@@ -576,31 +638,127 @@ formNovoAgendamento.addEventListener('submit', async (e) => {
     }
 });
 
-// Export to CSV Functionality
-document.getElementById('btnExportar').addEventListener('click', () => {
-    if (allPatients.length === 0) {
-        alert('Não há dados para exportar.');
+// Print / PDF Logic
+document.getElementById('btnImprimirProntuario')?.addEventListener('click', () => {
+    const name = document.getElementById('prontuarioPacienteNome').textContent.replace('- ', '');
+    const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
+    let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[], "fields": {}}');
+    
+    // Atualizar fields com os valores atuais dos inputs
+    const fieldIds = [
+        'p-cpf', 'p-rg', 'p-nasc', 'p-genero', 'p-ocupacao', 'p-endereco', 'p-indicado', 'p-inicio', 'p-emergencia',
+        'a-saude', 'a-tratamento', 'a-medicamentos', 'a-alergia', 'a-pressao', 'a-fumante', 'a-gengiva', 'a-habitos',
+        'e-higiene', 'e-halitose', 'e-mucosa', 'e-palato', 'e-obs', 'p-plano', 'p-contrato'
+    ];
+    fieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) prontData.fields[id] = el.value;
+    });
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Prontuário - ${name}</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.5; }
+                h1 { color: #6366F1; border-bottom: 2px solid #6366F1; padding-bottom: 10px; }
+                h2 { background: #F1F5F9; padding: 8px 12px; font-size: 1.1rem; margin-top: 30px; border-radius: 4px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+                .item { font-size: 0.9rem; }
+                .label { font-weight: bold; color: #64748B; margin-right: 5px; }
+                .timeline-item { border-left: 2px solid #E2E8F0; padding-left: 15px; margin-bottom: 20px; }
+                .date { font-size: 0.8rem; color: #94A3B8; font-weight: bold; }
+                .text { margin-top: 5px; white-space: pre-wrap; }
+                .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+                .photo-grid img { width: 100%; border-radius: 4px; }
+                @media print { .no-print { display: none; } }
+            </style>
+        </head>
+        <body>
+            <div style="text-align: right;"><button class="no-print" onclick="window.print()">Imprimir PDF</button></div>
+            <h1>Prontuário Odontológico</h1>
+            <p><strong>Paciente:</strong> ${name}</p>
+            
+            <h2>Identificação</h2>
+            <div class="grid">
+                <div class="item"><span class="label">CPF:</span> ${prontData.fields['p-cpf'] || '-'}</div>
+                <div class="item"><span class="label">RG:</span> ${prontData.fields['p-rg'] || '-'}</div>
+                <div class="item"><span class="label">Nascimento:</span> ${prontData.fields['p-nasc'] || '-'}</div>
+                <div class="item"><span class="label">Gênero:</span> ${prontData.fields['p-genero'] || '-'}</div>
+                <div class="item"><span class="label">Endereço:</span> ${prontData.fields['p-endereco'] || '-'}</div>
+            </div>
+
+            <h2>Anamnese</h2>
+            <div class="item"><span class="label">Problemas de Saúde:</span> ${prontData.fields['a-saude'] || '-'}</div>
+            <div class="item"><span class="label">Medicamentos:</span> ${prontData.fields['a-medicamentos'] || '-'}</div>
+            <div class="item"><span class="label">Alergias:</span> ${prontData.fields['a-alergia'] || '-'}</div>
+
+            <h2>Plano de Tratamento</h2>
+            <div class="text" style="background: #FFFBEB; padding: 15px; border-radius: 8px;">${prontData.fields['p-plano'] || 'Nenhum plano definido.'}</div>
+
+            <h2>Histórico / Evolução</h2>
+            ${prontData.entries.map(e => `
+                <div class="timeline-item">
+                    <div class="date">${formatDate(e.date)}</div>
+                    <div class="text">${e.text}</div>
+                </div>
+            `).join('')}
+
+            <h2>Contrato</h2>
+            <div class="text" style="border: 1px solid #E2E8F0; padding: 20px; font-size: 0.8rem;">${prontData.fields['p-contrato'] || 'Sem contrato.'}</div>
+
+            ${prontData.photos && prontData.photos.length > 0 ? `
+                <h2>Galeria de Fotos</h2>
+                <div class="photo-grid">
+                    ${prontData.photos.map(url => `<img src="${url}">`).join('')}
+                </div>
+            ` : ''}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+});
+
+// Export Functionality (Active Tab Only)
+document.getElementById('btnExportar')?.addEventListener('click', () => {
+    const isAtendimentos = activeTab === 'atendimentos';
+    const sourceData = isAtendimentos ? allPatients : allPatients.filter(p => {
+        const s1 = String(p.status || p.ai_service).toLowerCase();
+        const s2 = String(p.memoria_contexto || '').toLowerCase();
+        return s1.includes('agendado') || s1.includes('confirmado') || s1.includes('conclu') || s2.includes('agendado');
+    });
+
+    if (sourceData.length === 0) {
+        alert('Não há dados para exportar nesta aba.');
         return;
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Paciente,Telefone,Procedimento,Status,Data Conversa,Data Agendamento\n";
-
-    allPatients.forEach(p => {
-        const name = (p.patient_name || p.nome || 'Desconhecido').replace(/,/g, '');
-        const phone = (p.phone || p.telefone || p.identifier || '-').replace(/,/g, '');
-        const proc = (p.procedure || p.procedimento || 'Não informado').replace(/,/g, '');
-        const status = (p.status || p.ai_service || 'Pendente').replace(/,/g, '');
-        const dateConv = formatDate(p.created_at).replace(/,/g, '');
-        const dateAgend = formatDate(p.appointment_date || p.data_agendamento).replace(/,/g, '');
-        
-        csvContent += `${name},${phone},${proc},${status},${dateConv},${dateAgend}\n`;
-    });
+    if (isAtendimentos) {
+        csvContent += "Paciente,Telefone,Procedimento,Status,Data Conversa,Data Agendamento\n";
+        sourceData.forEach(p => {
+            const name = p.patient_name || p.nome || 'Desconhecido';
+            const phone = p.phone || p.telefone || '=';
+            const proc = p.procedure || p.procedimento || 'Não informado';
+            const status = p.status || p.ai_service || 'Pendente';
+            const d1 = formatDate(p.created_at);
+            const d2 = formatDate(p.appointment_date || p.data_agendamento);
+            csvContent += `"${name}","${phone}","${proc}","${status}","${d1}","${d2}"\n`;
+        });
+    } else {
+        csvContent += "Paciente,Telefone\n";
+        sourceData.forEach(p => {
+            const name = p.patient_name || p.nome || 'Desconhecido';
+            const phone = p.phone || p.telefone || '=';
+            csvContent += `"${name}","${phone}"\n`;
+        });
+    }
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "agendamentos_clinica.csv");
+    link.setAttribute("download", `export_${activeTab}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

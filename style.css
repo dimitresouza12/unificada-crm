@@ -148,7 +148,7 @@ body {
 .content {
     flex: 1;
     padding: 2rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }
@@ -315,12 +315,12 @@ td {
 
 /* Column Width Controls */
 .col-name { width: 180px; }
-.col-phone { width: 120px; }
+.col-phone { width: 130px; }
 .col-proc { width: 180px; }
-.col-dentist { width: 140px; }
-.col-status { width: 110px; }
-.col-date { width: 130px; }
-.col-actions { width: 120px; }
+.col-dentist { width: 140px; white-space: nowrap; }
+.col-status { width: 120px; }
+.col-date { width: 150px; }
+.col-actions { width: 130px; }
 
 /* Force alignment for status and actions */
 th.col-status, td.col-status,
@@ -332,8 +332,12 @@ tbody tr {
     transition: background-color 0.15s;
 }
 
+tbody tr:nth-child(even) {
+    background-color: #FDFDFF;
+}
+
 tbody tr:hover {
-    background-color: #F8FAFC;
+    background-color: #F1F5F9 !important;
 }
 
 /* Status Badges */
@@ -578,6 +582,50 @@ tbody tr:hover {
     display: block;
 }
 
+/* Prontuário Tabs */
+.pront-tab-btn {
+    background: none;
+    border: none;
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: 0.2s;
+}
+
+.pront-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
+.pront-tab-content.hidden {
+    display: none;
+}
+
+.anamnese-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.anamnese-row label {
+    font-size: 0.875rem;
+    color: var(--text-main);
+    font-weight: 500;
+}
+
+.anamnese-row input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
 /* Mobile Adjustments for Modal */
 @media (max-width: 768px) {
     .modal-body {
@@ -586,6 +634,11 @@ tbody tr:hover {
     
     .photos-section {
         order: -1; /* Fotos aparecem em cima no celular */
+    }
+
+    .anamnese-row {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
     }
 }
 
@@ -642,3 +695,98 @@ tbody tr:hover {
     }
 }
 
+/* Odontograma Styles */
+.odontograma-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    background: #fdfdfd;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+}
+
+.teeth-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.tooth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.tooth-icon {
+    width: 32px;
+    height: 40px;
+    background: white;
+    border: 2px solid #CBD5E1;
+    border-radius: 4px 4px 12px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748B;
+}
+
+.tooth:hover .tooth-icon {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.tooth-num {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Tooth Status Colors */
+.status-higido .tooth-icon { background: #DCFCE7; border-color: #22C55E; color: #166534; }
+.status-carie .tooth-icon { background: #FEE2E2; border-color: #EF4444; color: #991B1B; }
+.status-restaurado .tooth-icon { background: #DBEAFE; border-color: #3B82F6; color: #1E40AF; }
+.status-canal .tooth-icon { background: #FEF3C7; border-color: #F59E0B; color: #92400E; }
+.status-ausente .tooth-icon { background: #F1F5F9; border-color: #94A3B8; color: #475569; opacity: 0.4; }
+.status-protese .tooth-icon { background: #F3E8FF; border-color: #A855F7; color: #6B21A8; }
+
+/* Tooth Selector Popover */
+.tooth-selector {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+    z-index: 2000;
+    border: 1px solid var(--border);
+    min-width: 250px;
+}
+
+.tooth-selector h5 { margin-bottom: 1rem; color: var(--primary); border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+
+.selector-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.selector-options button {
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    background: white;
+}
+
+.selector-options button:hover { background: #f8fafc; border-color: var(--primary); }
