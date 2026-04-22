@@ -518,6 +518,7 @@ formNovoAgendamento.addEventListener('submit', async (e) => {
         procedimento: document.getElementById('inputProcedimento').value,
         status: document.getElementById('inputStatus').value,
         data_agendamento: document.getElementById('inputData').value,
+        conversation_id: 'manual-' + Date.now(),
         created_at: new Date().toISOString()
     };
 
