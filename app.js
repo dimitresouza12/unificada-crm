@@ -157,12 +157,22 @@ function renderTable(data) {
 
     // ABA PACIENTES (Filtro: Agendado, Confirmado, Concluído) (Sem Dentista e Status, Com Prontuário)
     const pacientes = data.filter(p => {
-        const s = String(p.status || p.ai_service).toLowerCase();
-        return s.includes('agendado') || s.includes('confirmado') || s.includes('concluído') || s.includes('finalizado') || s === 'true' || s === 'ativo';
+        const s1 = String(p.status || p.ai_service).toLowerCase();
+        const s2 = String(p.memoria_contexto || '').toLowerCase();
+        
+        // Verifica nos campos de status e dentro da memoria_contexto gerada pela IA
+        const hasValidStatus = s1.includes('agendado') || s1.includes('confirmado') || s1.includes('concluído') || s1.includes('finalizado') || 
+                               s2.includes('status atual: agendado') || s2.includes('status atual: confirmado') || s2.includes('status atual: concluído') || 
+                               s2.includes('agendado para') || s2.includes('marcado');
+        
+        // Verifica se existe alguma data de agendamento preenchida
+        const hasDate = (p.appointment_date || p.data_agendamento) ? true : false;
+
+        return hasValidStatus || hasDate;
     });
 
     if (pacientes.length === 0) {
-        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="6" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
+        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
     } else {
         const htmlPacientes = pacientes.map(patient => {
             let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
@@ -176,9 +186,6 @@ function renderTable(data) {
             <tr>
                 <td style="font-weight: 500;">${patientName}</td>
                 <td>${cleanPhone}</td>
-                <td>${patient.procedure || patient.procedimento || 'Não informado'}</td>
-                <td>${formatDate(patient.created_at)}</td>
-                <td>${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
                 <td>
                     <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: 0.2s;">
                         <i class="ph ph-file-text"></i> Prontuário

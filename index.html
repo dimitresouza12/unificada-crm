@@ -17,13 +17,13 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="style.css?v=8">
     <style>
-        /* Forçando alinhamento via HTML para driblar o cache do servidor */
-        th {
+        /* Forçando alinhamento e redução de padding via HTML */
+        th, td {
             text-align: left !important;
-            white-space: nowrap !important;
+            padding: 0.75rem 0.5rem !important; /* Diminui o espaçamento */
         }
-        td {
-            white-space: nowrap;
+        th {
+            white-space: nowrap !important;
         }
     </style>
 </head>
@@ -104,15 +104,12 @@
                             <tr>
                                 <th>Paciente</th>
                                 <th>Telefone</th>
-                                <th>Procedimento</th>
-                                <th>Data da Conversa</th>
-                                <th>Data Agendamento</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tableBodyPacientes">
                             <tr>
-                                <td colspan="6" class="loading-state">Carregando pacientes...</td>
+                                <td colspan="3" class="loading-state">Carregando pacientes...</td>
                             </tr>
                         </tbody>
                     </table>
