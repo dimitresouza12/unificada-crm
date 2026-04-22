@@ -65,15 +65,17 @@
                                 <th>Paciente</th>
                                 <th>Telefone</th>
                                 <th>Procedimento</th>
+                                <th>Dentista</th>
                                 <th>Status</th>
                                 <th>Data da Conversa</th>
                                 <th>Data Agendamento</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
                             <!-- Rows will be populated by app.js -->
                             <tr>
-                                <td colspan="6" class="loading-state">Carregando dados...</td>
+                                <td colspan="8" class="loading-state">Carregando dados...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -83,6 +85,29 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Modal Prontuário Digital -->
+    <div id="modalProntuario" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>Prontuário Digital <span id="prontuarioPacienteNome" style="color: var(--primary); font-size: 1rem; margin-left: 10px;"></span></h3>
+                <button class="btn-close" id="btnCloseProntuario"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formProntuario">
+                    <input type="hidden" id="prontuarioPacienteId">
+                    <div class="form-group">
+                        <label for="inputProntuarioText">Evolução Clínica e Observações</label>
+                        <textarea id="inputProntuarioText" rows="12" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="Digite aqui o histórico, planejamento e anotações clínicas do paciente..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btnCancelProntuario">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnSalvarProntuario">Salvar Prontuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Novo Agendamento -->
