@@ -377,11 +377,11 @@ formNovoAgendamento.addEventListener('submit', async (e) => {
     btnSalvar.disabled = true;
 
     const newPatient = {
-        patient_name: document.getElementById('inputNome').value,
-        phone: document.getElementById('inputTelefone').value,
-        procedure: document.getElementById('inputProcedimento').value,
+        nome: document.getElementById('inputNome').value,
+        telefone: document.getElementById('inputTelefone').value,
+        procedimento: document.getElementById('inputProcedimento').value,
         status: document.getElementById('inputStatus').value,
-        appointment_date: document.getElementById('inputData').value,
+        data_agendamento: document.getElementById('inputData').value,
         created_at: new Date().toISOString()
     };
 
