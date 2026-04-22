@@ -66,6 +66,14 @@ function getStatusClass(status) {
     return 'status-pendente'; // default
 }
 
+// Helper function to extract dentist name from context
+function getDentistName(patient) {
+    if (patient.nome_dentista) return patient.nome_dentista; // Se ja tiver coluna propria
+    if (!patient.memoria_contexto) return 'Não definida';
+    const match = patient.memoria_contexto.match(/Profissional Identificado:\s*(.+)/i);
+    return (match && match[1]) ? match[1].trim() : 'Não definida';
+}
+
 // Fetch data from Supabase
 async function fetchPatients() {
     if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
@@ -116,7 +124,9 @@ async function fetchPatients() {
 }
 
 // Render Table Rows
-function renderTable(data) {
+function renderTable(data, shouldPopulateDentists = true) {
+    if (shouldPopulateDentists) populateDentistFilter(allPatients);
+    
     if (data.length === 0) {
         document.getElementById('tableBodyAtendimentos').innerHTML = `<tr><td colspan="7" class="loading-state">Nenhum atendimento encontrado.</td></tr>`;
         document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="6" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
@@ -129,12 +139,7 @@ function renderTable(data) {
         let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
         if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
 
-        let dentista = 'Não definida';
-        if (patient.memoria_contexto) {
-            const match = patient.memoria_contexto.match(/Profissional Identificado:\s*(.+)/i);
-            if (match && match[1]) dentista = match[1].trim();
-        }
-        
+        const dentista = getDentistName(patient);
         const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
 
         return `
@@ -200,16 +205,47 @@ function renderTable(data) {
     resultsCount.textContent = `Mostrando ${data.length} atendimentos e ${pacientes.length} pacientes`;
 }
 
-// Search Functionality
-searchInput.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase();
+// Central Filtering Logic
+function applyFilters() {
+    const term = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value.toLowerCase();
+    const dentistFilter = document.getElementById('filterDentista').value;
+
     const filtered = allPatients.filter(p => {
         const name = (p.patient_name || p.nome || '').toLowerCase();
         const phone = (p.phone || p.telefone || '').toLowerCase();
-        return name.includes(term) || phone.includes(term);
+        const status = (p.status || p.ai_service || '').toLowerCase();
+        const dentist = getDentistName(p);
+
+        const matchesSearch = name.includes(term) || phone.includes(term);
+        const matchesStatus = statusFilter === "" || status.includes(statusFilter);
+        const matchesDentist = dentistFilter === "" || dentist === dentistFilter;
+
+        return matchesSearch && matchesStatus && matchesDentist;
     });
-    renderTable(filtered);
-});
+
+    renderTable(filtered, false); // false to avoid re-populating dentist select
+}
+
+function populateDentistFilter(data) {
+    const select = document.getElementById('filterDentista');
+    const currentValue = select.value;
+    const dentists = [...new Set(data.map(p => getDentistName(p)))].filter(d => d !== 'Não definida');
+    
+    select.innerHTML = '<option value="">Todas Dentistas</option><option value="Não definida">Não definida</option>';
+    dentists.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+    });
+    select.value = currentValue;
+}
+
+// Search & Filter Events
+searchInput.addEventListener('input', applyFilters);
+document.getElementById('filterStatus').addEventListener('change', applyFilters);
+document.getElementById('filterDentista').addEventListener('change', applyFilters);
 
 // Mock data initialization (Remove this block when Supabase Key is ready)
 function renderMockData() {
