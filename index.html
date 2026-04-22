@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=11">
 </head>
 <body>
     <div class="app-container">
@@ -111,25 +111,58 @@
         </main>
     </div>
 
-    <!-- Modal Prontuário Digital -->
+    <!-- Modal Prontuário Digital (Evoluído) -->
     <div id="modalProntuario" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-content" style="max-width: 850px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header">
-                <h3>Prontuário Digital <span id="prontuarioPacienteNome" style="color: var(--primary); font-size: 1rem; margin-left: 10px;"></span></h3>
+                <div>
+                    <h3>Prontuário Digital</h3>
+                    <p id="prontuarioPacienteNome" style="color: var(--primary); font-weight: 600; font-size: 0.9rem; margin-top: 4px;"></p>
+                </div>
                 <button class="btn-close" id="btnCloseProntuario"><i class="ph ph-x"></i></button>
             </div>
-            <div class="modal-body">
-                <form id="formProntuario">
-                    <input type="hidden" id="prontuarioPacienteId">
-                    <div class="form-group">
-                        <label for="inputProntuarioText">Evolução Clínica e Observações</label>
-                        <textarea id="inputProntuarioText" rows="12" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; resize: vertical; font-family: inherit;" placeholder="Digite aqui o histórico, planejamento e anotações clínicas do paciente..."></textarea>
+            
+            <div class="modal-body" style="flex: 1; overflow-y: auto; display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;">
+                <!-- Lado Esquerdo: Evoluções -->
+                <div class="evolution-section">
+                    <h4 style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Histórico de Evoluções</h4>
+                    
+                    <div id="timelineContainer" class="timeline-container">
+                        <!-- Evoluções serão carregadas aqui -->
+                        <div class="timeline-empty">Nenhuma anotação anterior.</div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" id="btnCancelProntuario">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" id="btnSalvarProntuario">Salvar Prontuário</button>
+
+                    <div class="new-entry-form" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed var(--border);">
+                        <h4 style="margin-bottom: 1rem; font-size: 0.9rem;">Nova Evolução Clínica</h4>
+                        <form id="formProntuario">
+                            <input type="hidden" id="prontuarioPacienteId">
+                            <textarea id="inputProntuarioText" rows="4" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; resize: none; font-family: inherit; margin-bottom: 1rem;" placeholder="Digite o que foi feito hoje..."></textarea>
+                            <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                                <button type="button" class="btn btn-secondary" id="btnCancelProntuario">Fechar</button>
+                                <button type="submit" class="btn btn-primary" id="btnSalvarProntuario">Salvar Nota</button>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
+
+                <!-- Lado Direito: Fotos e Anexos -->
+                <div class="photos-section" style="background: #F8FAFC; padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+                    <h4 style="margin-bottom: 1rem; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                        <i class="ph ph-camera"></i> Galeria de Fotos
+                    </h4>
+                    
+                    <div id="photoGallery" class="photo-gallery">
+                        <!-- Fotos serão carregadas aqui -->
+                    </div>
+
+                    <div class="upload-zone" style="margin-top: 1.5rem;">
+                        <label for="inputPhoto" class="btn btn-secondary" style="width: 100%; justify-content: center; border-style: dashed; background: white;">
+                            <i class="ph ph-upload-simple"></i> Anexar Foto
+                        </label>
+                        <input type="file" id="inputPhoto" accept="image/*" style="display: none;">
+                        <p style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 8px;">PNG ou JPG até 5MB</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -180,6 +213,6 @@
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Main App Logic -->
-    <script src="app.js?v=9"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>

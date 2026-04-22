@@ -269,20 +269,78 @@ document.addEventListener('click', (e) => {
 
 // --- Lógica do Prontuário Digital ---
 
+// --- Lógica do Prontuário Digital Evoluído ---
+
 document.addEventListener('click', (e) => {
     const btn = e.target.closest('.open-prontuario');
     if (btn) {
         const id = btn.getAttribute('data-id');
         const name = btn.getAttribute('data-name');
-        const content = btn.getAttribute('data-pront');
+        const rawContent = btn.getAttribute('data-pront');
         
         document.getElementById('prontuarioPacienteId').value = id;
         document.getElementById('prontuarioPacienteNome').textContent = '- ' + name;
-        document.getElementById('inputProntuarioText').value = content;
+        document.getElementById('inputProntuarioText').value = ''; // Limpa para nova nota
+        
+        renderProntuarioContent(rawContent);
         
         document.getElementById('modalProntuario').classList.remove('hidden');
     }
 });
+
+// Função para renderizar o histórico e as fotos do JSON
+function renderProntuarioContent(rawContent) {
+    const timelineContainer = document.getElementById('timelineContainer');
+    const photoGallery = document.getElementById('photoGallery');
+    
+    timelineContainer.innerHTML = '';
+    photoGallery.innerHTML = '';
+    
+    let prontData = { entries: [], photos: [] };
+    
+    try {
+        if (rawContent && rawContent.startsWith('{')) {
+            prontData = JSON.parse(rawContent);
+        } else if (rawContent) {
+            // Legado: se for apenas texto, transforma na primeira entrada
+            prontData.entries.push({ date: new Date().toISOString(), text: rawContent });
+        }
+    } catch (e) {
+        console.error("Erro ao ler prontuário:", e);
+    }
+    
+    // Renderizar Timeline
+    if (prontData.entries.length === 0) {
+        timelineContainer.innerHTML = '<div class="timeline-empty">Nenhuma anotação anterior.</div>';
+    } else {
+        // Ordena por data (mais recente primeiro)
+        prontData.entries.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            item.innerHTML = `
+                <div class="timeline-date">${formatDate(entry.date)}</div>
+                <div class="timeline-content">${entry.text.replace(/\n/g, '<br>')}</div>
+            `;
+            timelineContainer.appendChild(item);
+        });
+    }
+    
+    // Renderizar Fotos
+    if (prontData.photos && prontData.photos.length > 0) {
+        prontData.photos.forEach((url, index) => {
+            const photoItem = document.createElement('div');
+            photoItem.className = 'photo-item';
+            photoItem.innerHTML = `
+                <img src="${url}" alt="Foto Paciente" onclick="window.open('${url}', '_blank')">
+                <button class="btn-remove-photo" data-index="${index}"><i class="ph ph-trash"></i></button>
+            `;
+            photoGallery.appendChild(photoItem);
+        });
+    }
+    
+    // Guardar dados atuais no form para facilitar o update
+    document.getElementById('formProntuario').setAttribute('data-current-json', JSON.stringify(prontData));
+}
 
 document.getElementById('btnCloseProntuario')?.addEventListener('click', () => {
     document.getElementById('modalProntuario').classList.add('hidden');
@@ -294,42 +352,120 @@ document.getElementById('btnCancelProntuario')?.addEventListener('click', () => 
 document.getElementById('formProntuario')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
-        alert('Modo de teste: o prontuário não será salvo. Configure a chave do Supabase.');
-        document.getElementById('modalProntuario').classList.add('hidden');
+        alert('Modo de teste: o prontuário não será salvo.');
         return;
     }
 
     const btnSalvar = document.getElementById('btnSalvarProntuario');
     const originalText = btnSalvar.textContent;
+    const noteText = document.getElementById('inputProntuarioText').value.trim();
+    
+    if (!noteText) {
+        alert("Digite uma anotação para salvar.");
+        return;
+    }
+
     btnSalvar.textContent = 'Salvando...';
     btnSalvar.disabled = true;
 
     const id = document.getElementById('prontuarioPacienteId').value;
-    const content = document.getElementById('inputProntuarioText').value;
+    const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
+    let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[]}');
+    
+    // Adicionar nova entrada
+    prontData.entries.push({
+        date: new Date().toISOString(),
+        text: noteText
+    });
 
     try {
-        // Fallback: se não tiver 'id', tenta pelo 'identifier' (telefone)
-        let column = 'id';
-        if (!id.includes('-') && id.length > 5 && !isNaN(id)) {
-             column = 'identifier'; 
+        // Tenta achar pelo id ou telefone
+        let query = supabaseClient.from('chats').update({ prontuario: JSON.stringify(prontData) });
+        
+        if (id.includes('-') || isNaN(id)) {
+            query = query.eq('id', id);
+        } else {
+            query = query.eq('phone', id); // Se for o telefone
         }
 
-        const { error } = await supabaseClient
-            .from('chats')
-            .update({ prontuario: content })
-            .eq(column, id);
-
+        const { error } = await query;
         if (error) throw error;
         
-        document.getElementById('modalProntuario').classList.add('hidden');
-        // A tabela vai recarregar automaticamente pelo realtime, 
-        // mas chamamos aqui caso o realtime não esteja funcionando
+        // Sucesso: atualiza a UI local
+        document.getElementById('inputProntuarioText').value = '';
+        renderProntuarioContent(JSON.stringify(prontData));
         fetchPatients();
+        alert("Evolução salva com sucesso!");
+        
     } catch (err) {
         alert('Erro ao salvar prontuário: ' + err.message);
     } finally {
         btnSalvar.textContent = originalText;
         btnSalvar.disabled = false;
+    }
+});
+
+// Lógica de Upload de Fotos
+document.getElementById('inputPhoto')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
+        alert('Modo de teste: upload desativado.');
+        return;
+    }
+
+    const id = document.getElementById('prontuarioPacienteId').value;
+    const label = document.querySelector('label[for="inputPhoto"]');
+    const originalLabel = label.innerHTML;
+    
+    label.innerHTML = '<i class="ph ph-spinner-gap ph-spin"></i> Enviando...';
+    label.style.opacity = '0.7';
+
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${id}_${Date.now()}.${fileExt}`;
+        const filePath = `pacientes/${fileName}`;
+
+        // 1. Upload para o Storage
+        const { error: uploadError } = await supabaseClient.storage
+            .from('pacientes')
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // 2. Pegar URL Pública
+        const { data: { publicUrl } } = supabaseClient.storage
+            .from('pacientes')
+            .getPublicUrl(filePath);
+
+        // 3. Atualizar o JSON no Banco
+        const currentJsonStr = document.getElementById('formProntuario').getAttribute('data-current-json');
+        let prontData = JSON.parse(currentJsonStr || '{"entries":[], "photos":[]}');
+        
+        if (!prontData.photos) prontData.photos = [];
+        prontData.photos.push(publicUrl);
+
+        let query = supabaseClient.from('chats').update({ prontuario: JSON.stringify(prontData) });
+        if (id.includes('-') || isNaN(id)) {
+            query = query.eq('id', id);
+        } else {
+            query = query.eq('phone', id);
+        }
+
+        const { error: dbError } = await query;
+        if (dbError) throw dbError;
+
+        renderProntuarioContent(JSON.stringify(prontData));
+        alert("Foto anexada com sucesso!");
+
+    } catch (err) {
+        console.error(err);
+        alert('Erro no upload: ' + err.message + '. Verifique se o bucket "pacientes" existe e é público.');
+    } finally {
+        label.innerHTML = originalLabel;
+        label.style.opacity = '1';
+        e.target.value = ''; // limpa input
     }
 });
 
@@ -378,7 +514,7 @@ formNovoAgendamento.addEventListener('submit', async (e) => {
 
     const newPatient = {
         nome: document.getElementById('inputNome').value,
-        telefone: document.getElementById('inputTelefone').value,
+        phone: document.getElementById('inputTelefone').value,
         procedimento: document.getElementById('inputProcedimento').value,
         status: document.getElementById('inputStatus').value,
         data_agendamento: document.getElementById('inputData').value,
