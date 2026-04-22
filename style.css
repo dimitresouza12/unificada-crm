@@ -308,6 +308,7 @@ td {
     border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
     color: var(--text-main);
+    white-space: nowrap; /* ADICIONE ESTA LINHA */
 }
 
 tbody tr {
