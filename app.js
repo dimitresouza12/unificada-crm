@@ -139,17 +139,17 @@ function renderTable(data) {
 
         return `
         <tr>
-            <td style="font-weight: 500;">${patientName}</td>
-            <td>${cleanPhone}</td>
-            <td>${patient.procedure || patient.procedimento || 'Não informado'}</td>
-            <td><span style="color: var(--primary); font-weight: 500; background: #F3E8FF; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; white-space: nowrap;">${dentista}</span></td>
-            <td>
+            <td class="col-name" style="font-weight: 500;">${patientName}</td>
+            <td class="col-phone">${cleanPhone}</td>
+            <td class="col-proc">${patient.procedure || patient.procedimento || 'Não informado'}</td>
+            <td class="col-dentist"><span style="color: var(--primary); font-weight: 600; background: var(--primary-light); padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; white-space: nowrap;">${dentista}</span></td>
+            <td class="col-status">
                 <span class="status-badge ${getStatusClass(patient.status || patient.ai_service)}">
                     ${patient.status || patient.ai_service || 'Pendente'}
                 </span>
             </td>
-            <td>${formatDate(patient.created_at)}</td>
-            <td>${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
+            <td class="col-date">${formatDate(patient.created_at)}</td>
+            <td class="col-date">${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
         </tr>
         `;
     }).join('');
@@ -184,10 +184,10 @@ function renderTable(data) {
 
             return `
             <tr>
-                <td style="font-weight: 500;">${patientName}</td>
-                <td>${cleanPhone}</td>
-                <td>
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: 0.2s;">
+                <td class="col-name" style="font-weight: 500;">${patientName}</td>
+                <td class="col-phone">${cleanPhone}</td>
+                <td class="col-actions">
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
                         <i class="ph ph-file-text"></i> Prontuário
                     </button>
                 </td>

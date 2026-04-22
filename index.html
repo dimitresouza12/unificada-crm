@@ -15,18 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="style.css?v=8">
-    <style>
-        /* Forçando alinhamento e redução de padding via HTML */
-        th, td {
-            text-align: left !important;
-            padding: 0.75rem 0.5rem !important; /* Diminui o espaçamento */
-            white-space: nowrap !important; /* ADICIONE ESTA LINHA AQUI */
-        }
-        th {
-            white-space: nowrap !important;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
     <div class="app-container">
@@ -81,13 +70,13 @@
                     <table id="tableAtendimentos">
                         <thead>
                             <tr>
-                                <th>Paciente</th>
-                                <th>Telefone</th>
-                                <th>Procedimento</th>
-                                <th>Dentista</th>
-                                <th>Status</th>
-                                <th>Data da Conversa</th>
-                                <th>Data Agendamento</th>
+                                <th class="col-name">Paciente</th>
+                                <th class="col-phone">Telefone</th>
+                                <th class="col-proc">Procedimento</th>
+                                <th class="col-dentist">Dentista</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-date">Data Conversa</th>
+                                <th class="col-date">Data Agendamento</th>
                             </tr>
                         </thead>
                         <tbody id="tableBodyAtendimentos">
@@ -103,9 +92,9 @@
                     <table id="tablePacientes">
                         <thead>
                             <tr>
-                                <th>Paciente</th>
-                                <th>Telefone</th>
-                                <th>Ações</th>
+                                <th class="col-name">Paciente</th>
+                                <th class="col-phone">Telefone</th>
+                                <th class="col-actions">Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tableBodyPacientes">
@@ -191,6 +180,6 @@
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Main App Logic -->
-    <script src="app.js?v=7"></script>
+    <script src="app.js?v=9"></script>
 </body>
 </html>
