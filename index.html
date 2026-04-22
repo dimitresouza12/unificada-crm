@@ -39,7 +39,7 @@
         <!-- Main Content -->
         <main class="content">
             <div class="page-header">
-                <h2>Pacientes & Agendamentos</h2>
+                <h2>Gestão da Clínica</h2>
                 <div class="header-actions">
                     <button class="btn btn-primary" id="btnNovoAgendamento">
                         <i class="ph ph-plus"></i> Novo Agendamento
@@ -50,6 +50,12 @@
                 </div>
             </div>
 
+            <!-- Tab Navigation -->
+            <div class="tabs-navigation">
+                <button class="tab-btn active" data-target="tabAtendimentos">Atendimentos (Leads)</button>
+                <button class="tab-btn" data-target="tabPacientes">Ficha de Pacientes</button>
+            </div>
+
             <!-- Data Table -->
             <div class="table-card">
                 <div class="table-header">
@@ -58,8 +64,10 @@
                         <input type="text" id="searchInput" placeholder="Buscar paciente...">
                     </div>
                 </div>
-                <div class="table-container">
-                    <table id="patientsTable">
+                
+                <!-- ABA ATENDIMENTOS -->
+                <div class="table-container tab-content active" id="tabAtendimentos">
+                    <table id="tableAtendimentos">
                         <thead>
                             <tr>
                                 <th>Paciente</th>
@@ -69,13 +77,32 @@
                                 <th>Status</th>
                                 <th>Data da Conversa</th>
                                 <th>Data Agendamento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyAtendimentos">
+                            <tr>
+                                <td colspan="7" class="loading-state">Carregando dados...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ABA PACIENTES -->
+                <div class="table-container tab-content hidden" id="tabPacientes" style="display: none;">
+                    <table id="tablePacientes">
+                        <thead>
+                            <tr>
+                                <th>Paciente</th>
+                                <th>Telefone</th>
+                                <th>Procedimento</th>
+                                <th>Data da Conversa</th>
+                                <th>Data Agendamento</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="tableBody">
-                            <!-- Rows will be populated by app.js -->
+                        <tbody id="tableBodyPacientes">
                             <tr>
-                                <td colspan="8" class="loading-state">Carregando dados...</td>
+                                <td colspan="6" class="loading-state">Carregando pacientes...</td>
                             </tr>
                         </tbody>
                     </table>

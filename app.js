@@ -118,23 +118,31 @@ async function fetchPatients() {
 // Render Table Rows
 function renderTable(data) {
     if (data.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="5" class="loading-state">Nenhum paciente encontrado.</td>
-            </tr>
-        `;
+        document.getElementById('tableBodyAtendimentos').innerHTML = `<tr><td colspan="7" class="loading-state">Nenhum atendimento encontrado.</td></tr>`;
+        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="6" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
         resultsCount.textContent = 'Mostrando 0 resultados';
         return;
     }
 
-    // Mapping Supabase columns to UI
-    // Adjust these property names (patient_name, phone, procedure, status, appointment_date) 
-    // to match the exact column names in the Supabase 'chats' table.
-    const html = data.map(patient => `
+    // ABA ATENDIMENTOS (Tudo, sem Prontuário)
+    const htmlAtendimentos = data.map(patient => {
+        let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
+        if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+
+        let dentista = 'Não definida';
+        if (patient.memoria_contexto) {
+            const match = patient.memoria_contexto.match(/Profissional Identificado:\s*(.+)/i);
+            if (match && match[1]) dentista = match[1].trim();
+        }
+        
+        const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+
+        return `
         <tr>
-            <td style="font-weight: 500;">${patient.patient_name || patient.nome || 'Desconhecido'}</td>
-            <td>${patient.phone || patient.telefone || patient.identifier || '-'}</td>
+            <td style="font-weight: 500;">${patientName}</td>
+            <td>${cleanPhone}</td>
             <td>${patient.procedure || patient.procedimento || 'Não informado'}</td>
+            <td><span style="color: var(--primary); font-weight: 500; background: #F3E8FF; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; white-space: nowrap;">${dentista}</span></td>
             <td>
                 <span class="status-badge ${getStatusClass(patient.status || patient.ai_service)}">
                     ${patient.status || patient.ai_service || 'Pendente'}
@@ -143,10 +151,46 @@ function renderTable(data) {
             <td>${formatDate(patient.created_at)}</td>
             <td>${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
+    document.getElementById('tableBodyAtendimentos').innerHTML = htmlAtendimentos;
 
-    tableBody.innerHTML = html;
-    resultsCount.textContent = `Mostrando ${data.length} resultados`;
+    // ABA PACIENTES (Filtro: Agendado, Confirmado, Concluído) (Sem Dentista e Status, Com Prontuário)
+    const pacientes = data.filter(p => {
+        const s = String(p.status || p.ai_service).toLowerCase();
+        return s.includes('agendado') || s.includes('confirmado') || s.includes('concluído') || s.includes('finalizado') || s === 'true' || s === 'ativo';
+    });
+
+    if (pacientes.length === 0) {
+        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="6" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
+    } else {
+        const htmlPacientes = pacientes.map(patient => {
+            let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
+            if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+
+            const recordId = patient.id || cleanPhone;
+            const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
+            const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+
+            return `
+            <tr>
+                <td style="font-weight: 500;">${patientName}</td>
+                <td>${cleanPhone}</td>
+                <td>${patient.procedure || patient.procedimento || 'Não informado'}</td>
+                <td>${formatDate(patient.created_at)}</td>
+                <td>${formatDate(patient.appointment_date || patient.data_agendamento)}</td>
+                <td>
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: 0.2s;">
+                        <i class="ph ph-file-text"></i> Prontuário
+                    </button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+        document.getElementById('tableBodyPacientes').innerHTML = htmlPacientes;
+    }
+
+    resultsCount.textContent = `Mostrando ${data.length} atendimentos e ${pacientes.length} pacientes`;
 }
 
 // Search Functionality
@@ -195,6 +239,90 @@ document.addEventListener('DOMContentLoaded', () => {
         renderMockData();
     } else {
         fetchPatients();
+    }
+});
+
+// --- Lógica de Navegação das Abas ---
+document.addEventListener('click', (e) => {
+    if(e.target.classList.contains('tab-btn')) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => {
+            c.classList.remove('active');
+            c.style.display = 'none';
+        });
+        
+        e.target.classList.add('active');
+        const target = document.getElementById(e.target.getAttribute('data-target'));
+        if(target) {
+            target.classList.add('active');
+            target.style.display = 'block';
+        }
+    }
+});
+
+// --- Lógica do Prontuário Digital ---
+
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.open-prontuario');
+    if (btn) {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const content = btn.getAttribute('data-pront');
+        
+        document.getElementById('prontuarioPacienteId').value = id;
+        document.getElementById('prontuarioPacienteNome').textContent = '- ' + name;
+        document.getElementById('inputProntuarioText').value = content;
+        
+        document.getElementById('modalProntuario').classList.remove('hidden');
+    }
+});
+
+document.getElementById('btnCloseProntuario')?.addEventListener('click', () => {
+    document.getElementById('modalProntuario').classList.add('hidden');
+});
+document.getElementById('btnCancelProntuario')?.addEventListener('click', () => {
+    document.getElementById('modalProntuario').classList.add('hidden');
+});
+
+document.getElementById('formProntuario')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (SUPABASE_KEY === 'SUA_CHAVE_AQUI') {
+        alert('Modo de teste: o prontuário não será salvo. Configure a chave do Supabase.');
+        document.getElementById('modalProntuario').classList.add('hidden');
+        return;
+    }
+
+    const btnSalvar = document.getElementById('btnSalvarProntuario');
+    const originalText = btnSalvar.textContent;
+    btnSalvar.textContent = 'Salvando...';
+    btnSalvar.disabled = true;
+
+    const id = document.getElementById('prontuarioPacienteId').value;
+    const content = document.getElementById('inputProntuarioText').value;
+
+    try {
+        // Fallback: se não tiver 'id', tenta pelo 'identifier' (telefone)
+        let column = 'id';
+        if (!id.includes('-') && id.length > 5 && !isNaN(id)) {
+             column = 'identifier'; 
+        }
+
+        const { error } = await supabaseClient
+            .from('chats')
+            .update({ prontuario: content })
+            .eq(column, id);
+
+        if (error) throw error;
+        
+        document.getElementById('modalProntuario').classList.add('hidden');
+        // A tabela vai recarregar automaticamente pelo realtime, 
+        // mas chamamos aqui caso o realtime não esteja funcionando
+        fetchPatients();
+    } catch (err) {
+        alert('Erro ao salvar prontuário: ' + err.message);
+    } finally {
+        btnSalvar.textContent = originalText;
+        btnSalvar.disabled = false;
     }
 });
 
