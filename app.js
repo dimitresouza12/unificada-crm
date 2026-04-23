@@ -850,31 +850,36 @@ document.getElementById('btnExportar')?.addEventListener('click', () => {
         return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,";
+    // Usamos ponto e vírgula (;) para compatibilidade direta com Excel em Português
+    let csvContent = "";
     if (isAtendimentos) {
-        csvContent += "Paciente,Telefone,Procedimento,Status,Data Conversa,Data Agendamento\n";
+        csvContent += "Paciente;Telefone;Procedimento;Dentista;Status;Data Conversa;Data Agendamento\n";
         sourceData.forEach(p => {
-            const name = p.patient_name || p.nome || 'Desconhecido';
-            const phone = p.phone || p.telefone || '=';
-            const proc = p.procedure || p.procedimento || 'Não informado';
-            const status = p.status || p.ai_service || 'Pendente';
+            const name = (p.patient_name || p.nome || 'Desconhecido').replace(/;/g, ' ');
+            const phone = formatPhone(p.phone || p.telefone || p.identifier);
+            const proc = (p.procedure || p.procedimento || 'Não informado').replace(/;/g, ' ');
+            const dentist = getDentistName(p).replace(/;/g, ' ');
+            const status = (p.status || p.ai_service || 'Pendente').replace(/;/g, ' ');
             const d1 = formatDate(p.created_at);
             const d2 = formatDate(p.appointment_date || p.data_agendamento);
-            csvContent += `"${name}","${phone}","${proc}","${status}","${d1}","${d2}"\n`;
+            csvContent += `${name};${phone};${proc};${dentist};${status};${d1};${d2}\n`;
         });
     } else {
-        csvContent += "Paciente,Telefone\n";
+        csvContent += "Paciente;Telefone\n";
         sourceData.forEach(p => {
-            const name = p.patient_name || p.nome || 'Desconhecido';
-            const phone = p.phone || p.telefone || '=';
-            csvContent += `"${name}","${phone}"\n`;
+            const name = (p.patient_name || p.nome || 'Desconhecido').replace(/;/g, ' ');
+            const phone = formatPhone(p.phone || p.telefone || p.identifier);
+            csvContent += `${name};${phone}\n`;
         });
     }
 
-    const encodedUri = encodeURI(csvContent);
+    // O caractere \uFEFF é o segredo para o Excel abrir com acentos corretos (UTF-8 BOM)
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `export_${activeTab}.csv`);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `export_${activeTab}_${new Date().toLocaleDateString('pt-BR')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
