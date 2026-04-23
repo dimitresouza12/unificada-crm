@@ -850,37 +850,38 @@ document.getElementById('btnExportar')?.addEventListener('click', () => {
         return;
     }
 
-    // Usamos ponto e vírgula (;) para compatibilidade direta com Excel em Português
-    let csvContent = "";
-    if (isAtendimentos) {
-        csvContent += "Paciente;Telefone;Procedimento;Dentista;Status;Data Conversa;Data Agendamento\n";
-        sourceData.forEach(p => {
-            const name = (p.patient_name || p.nome || 'Desconhecido').replace(/;/g, ' ');
-            const phone = formatPhone(p.phone || p.telefone || p.identifier);
-            const proc = (p.procedure || p.procedimento || 'Não informado').replace(/;/g, ' ');
-            const dentist = getDentistName(p).replace(/;/g, ' ');
-            const status = (p.status || p.ai_service || 'Pendente').replace(/;/g, ' ');
-            const d1 = formatDate(p.created_at);
-            const d2 = formatDate(p.appointment_date || p.data_agendamento);
-            csvContent += `${name};${phone};${proc};${dentist};${status};${d1};${d2}\n`;
-        });
-    } else {
-        csvContent += "Paciente;Telefone\n";
-        sourceData.forEach(p => {
-            const name = (p.patient_name || p.nome || 'Desconhecido').replace(/;/g, ' ');
-            const phone = formatPhone(p.phone || p.telefone || p.identifier);
-            csvContent += `${name};${phone}\n`;
-        });
-    }
+    // Preparar os dados para o Excel
+    const exportData = sourceData.map(p => {
+        if (isAtendimentos) {
+            return {
+                "Paciente": p.patient_name || p.nome || 'Desconhecido',
+                "Telefone": formatPhone(p.phone || p.telefone || p.identifier),
+                "Procedimento": p.procedure || p.procedimento || 'Não informado',
+                "Dentista": getDentistName(p),
+                "Status": p.status || p.ai_service || 'Pendente',
+                "Data Conversa": formatDate(p.created_at),
+                "Data Agendamento": formatDate(p.appointment_date || p.data_agendamento)
+            };
+        } else {
+            return {
+                "Paciente": p.patient_name || p.nome || 'Desconhecido',
+                "Telefone": formatPhone(p.phone || p.telefone || p.identifier)
+            };
+        }
+    });
 
-    // O caractere \uFEFF é o segredo para o Excel abrir com acentos corretos (UTF-8 BOM)
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `export_${activeTab}_${new Date().toLocaleDateString('pt-BR')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Criar a planilha usando a biblioteca XLSX
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, isAtendimentos ? "Atendimentos" : "Pacientes");
+
+    // Ajustar largura das colunas automaticamente
+    const wscols = isAtendimentos 
+        ? [{wch:30}, {wch:20}, {wch:25}, {wch:20}, {wch:15}, {wch:20}, {wch:20}]
+        : [{wch:30}, {wch:20}];
+    worksheet['!cols'] = wscols;
+
+    // Gerar e baixar o arquivo .xlsx
+    const fileName = `export_${activeTab}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
 });
