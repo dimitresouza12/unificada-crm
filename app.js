@@ -663,23 +663,40 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
             <title>Prontuário - ${name}</title>
             <style>
                 body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.5; }
-                h1 { color: #6366F1; border-bottom: 2px solid #6366F1; padding-bottom: 10px; }
-                h2 { background: #F1F5F9; padding: 8px 12px; font-size: 1.1rem; margin-top: 30px; border-radius: 4px; }
+                .clinic-header { display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #7C3AED; padding-bottom: 20px; margin-bottom: 30px; }
+                .clinic-header img { height: 60px; object-fit: contain; }
+                .clinic-info { flex: 1; }
+                .clinic-info h1 { color: #7C3AED; margin: 0; font-size: 1.8rem; border: none; padding: 0; }
+                .clinic-info p { margin: 4px 0 0 0; font-size: 0.9rem; color: #64748B; }
+                h2 { background: #F8FAFC; padding: 10px 15px; font-size: 1.1rem; margin-top: 30px; border-left: 4px solid #7C3AED; border-radius: 0 4px 4px 0; color: #1E293B; }
                 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
                 .item { font-size: 0.9rem; }
-                .label { font-weight: bold; color: #64748B; margin-right: 5px; }
-                .timeline-item { border-left: 2px solid #E2E8F0; padding-left: 15px; margin-bottom: 20px; }
-                .date { font-size: 0.8rem; color: #94A3B8; font-weight: bold; }
-                .text { margin-top: 5px; white-space: pre-wrap; }
-                .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-                .photo-grid img { width: 100%; border-radius: 4px; }
-                @media print { .no-print { display: none; } }
+                .label { font-weight: bold; color: #475569; margin-right: 5px; }
+                .timeline-item { border-left: 2px solid #CBD5E1; padding-left: 15px; margin-bottom: 20px; position: relative; }
+                .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #7C3AED; }
+                .date { font-size: 0.8rem; color: #64748B; font-weight: bold; margin-bottom: 4px; }
+                .text { margin-top: 5px; white-space: pre-wrap; color: #334155; }
+                .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+                .photo-grid img { width: 100%; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                .patient-highlight { background: #EDE9FE; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+                .patient-highlight p { margin: 0; font-size: 1.1rem; color: #4C1D95; }
+                @media print { .no-print { display: none; } body { padding: 0; } }
             </style>
         </head>
         <body>
-            <div style="text-align: right;"><button class="no-print" onclick="window.print()">Imprimir PDF</button></div>
-            <h1>Prontuário Odontológico</h1>
-            <p><strong>Paciente:</strong> ${name}</p>
+            <div style="text-align: right; margin-bottom: 20px;"><button class="no-print" onclick="window.print()" style="background: #7C3AED; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Imprimir Prontuário</button></div>
+            
+            <div class="clinic-header">
+                <img src="https://i.ibb.co/6y4tWvJ/logo-placeholder.png" alt="Logo Clínica" onerror="this.style.display='none'">
+                <div class="clinic-info">
+                    <h1>Clínica Unificada</h1>
+                    <p>Av. Exemplo, 1000 - Centro | Telefone: (00) 0000-0000</p>
+                </div>
+            </div>
+
+            <div class="patient-highlight">
+                <p><strong>Paciente:</strong> ${name}</p>
+            </div>
             
             <h2>Identificação</h2>
             <div class="grid">
@@ -706,8 +723,6 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
                 </div>
             `).join('')}
 
-            <h2>Contrato</h2>
-            <div class="text" style="border: 1px solid #E2E8F0; padding: 20px; font-size: 0.8rem;">${prontData.fields['p-contrato'] || 'Sem contrato.'}</div>
 
             ${prontData.photos && prontData.photos.length > 0 ? `
                 <h2>Galeria de Fotos</h2>
@@ -718,8 +733,49 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
         </body>
         </html>
     `);
+    `);
     printWindow.document.close();
 });
+
+// Impressão Isolada do Contrato
+document.getElementById('btnImprimirContrato')?.addEventListener('click', () => {
+    const name = document.getElementById('prontuarioPacienteNome').textContent.replace('- ', '');
+    const contratoText = document.getElementById('p-contrato').value || 'Nenhum contrato definido para este paciente.';
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Contrato - ${name}</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.6; }
+                .clinic-header { display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #7C3AED; padding-bottom: 20px; margin-bottom: 40px; }
+                .clinic-header img { height: 60px; object-fit: contain; }
+                .clinic-info { flex: 1; }
+                .clinic-info h1 { color: #7C3AED; margin: 0; font-size: 1.8rem; border: none; padding: 0; }
+                .clinic-info p { margin: 4px 0 0 0; font-size: 0.9rem; color: #64748B; }
+                .contract-body { white-space: pre-wrap; text-align: justify; font-size: 1rem; }
+                @media print { .no-print { display: none; } body { padding: 0; } }
+            </style>
+        </head>
+        <body>
+            <div style="text-align: right; margin-bottom: 20px;"><button class="no-print" onclick="window.print()" style="background: #7C3AED; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Imprimir Contrato</button></div>
+            
+            <div class="clinic-header">
+                <img src="https://i.ibb.co/6y4tWvJ/logo-placeholder.png" alt="Logo Clínica" onerror="this.style.display='none'">
+                <div class="clinic-info">
+                    <h1>Clínica Unificada</h1>
+                    <p>Av. Exemplo, 1000 - Centro | Telefone: (00) 0000-0000</p>
+                </div>
+            </div>
+
+            <div class="contract-body">${contratoText}</div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+});
+
 
 // Export Functionality (Active Tab Only)
 document.getElementById('btnExportar')?.addEventListener('click', () => {

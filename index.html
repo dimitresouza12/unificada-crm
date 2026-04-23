@@ -231,9 +231,15 @@
 
                     <!-- ABA 6: CONTRATO -->
                     <div id="tab-contrato" class="pront-tab-content hidden">
-                        <h4 style="margin-bottom: 1rem;">Contrato de Prestação de Serviços</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0;">Contrato de Prestação de Serviços</h4>
+                            <button type="button" class="btn btn-secondary" id="btnImprimirContrato" style="background: #E2E8F0; color: #475569;">
+                                <i class="ph ph-printer"></i> Imprimir Contrato
+                            </button>
+                        </div>
                         <textarea id="p-contrato" rows="15" style="width: 100%; font-family: monospace;" placeholder="Texto do contrato..."></textarea>
                     </div>
+
 
                     <!-- ABA 7: ODONTOGRAMA -->
                     <div id="tab-odontograma" class="pront-tab-content hidden">
@@ -325,6 +331,6 @@
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Main App Logic -->
-    <script src="app.js?v=19"></script>
+    <script src="app.js?v=20"></script>
 </body>
 </html>
