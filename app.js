@@ -191,7 +191,13 @@ function renderTable(data, shouldPopulateDentists = true) {
             if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
             const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
             const recordId = patient.id || cleanPhone;
-            const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
+            
+            // Garantir que o prontuário seja sempre uma string, mesmo que o banco retorne como objeto JSON (jsonb)
+            let prontRaw = patient.prontuario || '';
+            if (typeof prontRaw === 'object') {
+                prontRaw = JSON.stringify(prontRaw);
+            }
+            const prontuarioContent = prontRaw.replace(/"/g, '&quot;');
 
             return `
             <tr>
