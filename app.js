@@ -44,17 +44,38 @@ const searchInput = document.getElementById('searchInput');
 let allPatients = [];
 let activeTab = 'atendimentos';
 
-// Helper function to format dates
+// Helper function to format dates (short version: xx/xx/xx)
 function formatDate(dateString) {
     if (!dateString) return 'Não definida';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('pt-BR', {
         day: '2-digit',
-        month: 'short',
-        year: 'numeric',
+        month: '2-digit',
+        year: '2-digit',
         hour: '2-digit',
         minute: '2-digit'
     }).format(date);
+}
+
+// Helper function to format phones
+function formatPhone(phoneStr) {
+    if (!phoneStr) return '-';
+    let str = String(phoneStr);
+    
+    if (str.includes('@')) str = str.split('@')[0];
+    
+    const digits = str.replace(/\D/g, '');
+    
+    if (digits.length >= 10) {
+        if (digits.startsWith('55') && digits.length >= 12) {
+            return `(${digits.substring(2, 4)}) ${digits.substring(4, 9)}-${digits.substring(9, 13)}`;
+        } else {
+            return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7, 11)}`;
+        }
+    }
+    
+    if (digits.length > 5) return digits;
+    return '-';
 }
 
 // Helper function to get status badge class
@@ -151,14 +172,13 @@ function renderTable(data, shouldPopulateDentists = true) {
 
     // ABA ATENDIMENTOS (Tudo, sem Prontuário)
     const htmlAtendimentos = data.map(patient => {
-        let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
-        if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+        const cleanPhone = formatPhone(patient.phone || patient.telefone || patient.identifier);
 
         const dentista = getDentistName(patient);
         let patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
         
         // UX: Identificação de Novo Lead
-        const isNewLead = patientName === 'Desconhecido' || cleanPhone === '=';
+        const isNewLead = patientName === 'Desconhecido' || cleanPhone === '-';
         if (isNewLead) {
             patientName = `<span style="color: var(--primary); background: var(--primary-light); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; margin-right: 6px;">NOVO</span> ${patientName}`;
         }
@@ -201,10 +221,9 @@ function renderTable(data, shouldPopulateDentists = true) {
         document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
     } else {
             const htmlPacientes = pacientes.map(patient => {
-            let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
-            if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+            const cleanPhone = formatPhone(patient.phone || patient.telefone || patient.identifier);
             const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
-            const recordId = patient.id || cleanPhone;
+            const recordId = patient.id || (patient.phone ? String(patient.phone).replace(/\D/g, '') : 'default');
             
             // Garantir que o prontuário seja sempre uma string, mesmo que o banco retorne como objeto JSON (jsonb)
             let prontRaw = patient.prontuario || '';
