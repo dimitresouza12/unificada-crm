@@ -215,6 +215,26 @@
                         </div>
                     </div>
 
+                    <!-- ABA 5: FOTOS -->
+                    <div id="tab-fotos" class="pront-tab-content hidden">
+                        <div class="photos-section">
+                            <h4 style="margin-bottom: 1rem;">Galeria de Imagens</h4>
+                            <div id="photoGallery" class="photo-gallery" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem;"></div>
+                            <div style="margin-top: 1rem;">
+                                <label for="inputFotos" class="btn btn-secondary" style="cursor: pointer;">
+                                    <i class="ph ph-upload-simple"></i> Adicionar Foto
+                                </label>
+                                <input type="file" id="inputFotos" multiple accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 6: CONTRATO -->
+                    <div id="tab-contrato" class="pront-tab-content hidden">
+                        <h4 style="margin-bottom: 1rem;">Contrato de Prestação de Serviços</h4>
+                        <textarea id="p-contrato" rows="15" style="width: 100%; font-family: monospace;" placeholder="Texto do contrato..."></textarea>
+                    </div>
+
                     <!-- ABA 7: ODONTOGRAMA -->
                     <div id="tab-odontograma" class="pront-tab-content hidden">
                         <div style="text-align: center; margin-bottom: 2rem;">
@@ -305,6 +325,6 @@
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Main App Logic -->
-    <script src="app.js?v=18"></script>
+    <script src="app.js?v=19"></script>
 </body>
 </html>
