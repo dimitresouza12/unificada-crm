@@ -1,11 +1,11 @@
 // Global Error Handler for Debugging
 window.addEventListener('error', function(e) {
-    const tb = document.getElementById('tableBody');
-    if(tb) tb.innerHTML = `<tr><td colspan="5" style="color:red; padding: 2rem;">Erro de Código: ${e.message}</td></tr>`;
+    const tb = document.getElementById('tableBodyAtendimentos');
+    if(tb) tb.innerHTML = `<tr><td colspan="7" style="color:red; padding: 2rem;">Erro de Código: ${e.message}</td></tr>`;
 });
 window.addEventListener('unhandledrejection', function(e) {
-    const tb = document.getElementById('tableBody');
-    if(tb) tb.innerHTML = `<tr><td colspan="5" style="color:red; padding: 2rem;">Erro de Banco/Conexão: ${e.reason}</td></tr>`;
+    const tb = document.getElementById('tableBodyAtendimentos');
+    if(tb) tb.innerHTML = `<tr><td colspan="7" style="color:red; padding: 2rem;">Erro de Banco/Conexão: ${e.reason}</td></tr>`;
 });
 
 // ATENÇÃO: COLOQUE SUA CHAVE AQUI
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // DOM Elements
-const tableBody = document.getElementById('tableBody');
+const tableBody = document.getElementById('tableBodyAtendimentos');
 const resultsCount = document.getElementById('resultsCount');
 const searchInput = document.getElementById('searchInput');
 
@@ -185,28 +185,30 @@ function renderTable(data, shouldPopulateDentists = true) {
 
     if (pacientes.length === 0) {
         document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
-    const htmlPacientes = pacientes.map(patient => {
-        let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
-        if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
-        const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
-        const recordId = patient.id || cleanPhone;
-        const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
+    } else {
+            const htmlPacientes = pacientes.map(patient => {
+            let cleanPhone = patient.phone || patient.telefone || patient.identifier || '-';
+            if (cleanPhone.includes('@')) cleanPhone = cleanPhone.split('@')[0];
+            const patientName = (patient.patient_name || patient.nome || 'Desconhecido').replace(/"/g, '&quot;');
+            const recordId = patient.id || cleanPhone;
+            const prontuarioContent = (patient.prontuario || '').replace(/"/g, '&quot;');
 
-        return `
-        <tr>
-            <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
-            <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
-            <td class="col-actions">
-                <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
-                    <i class="ph ph-file-text"></i> Prontuário
-                </button>
-            </td>
-        </tr>
-        `;
-    }).join('');
+            return `
+            <tr>
+                <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
+                <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
+                <td class="col-actions">
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-pront="${prontuarioContent}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
+                        <i class="ph ph-file-text"></i> Prontuário
+                    </button>
+                </td>
+            </tr>
+            `;
+        }).join('');
+        document.getElementById('tableBodyPacientes').innerHTML = htmlPacientes;
+    }
 
     document.getElementById('tableBodyAtendimentos').innerHTML = htmlAtendimentos || `<tr><td colspan="7" class="loading-state">Nenhum atendimento encontrado.</td></tr>`;
-    document.getElementById('tableBodyPacientes').innerHTML = htmlPacientes || `<tr><td colspan="3" class="loading-state">Nenhum paciente confirmado encontrado.</td></tr>`;
     
     // UX: Rodapé contextual
     if (activeTab === 'atendimentos') {
@@ -271,10 +273,9 @@ const tabPacientes = document.getElementById('tabPacientes');
 tabAtendimentos.addEventListener('click', () => {
     activeTab = 'atendimentos';
     tabAtendimentos.classList.add('active');
-    tabPacientes.classList.add('active-tab');
     tabPacientes.classList.remove('active');
-    document.getElementById('tableAtendimentos').parentElement.classList.remove('hidden');
-    document.getElementById('tablePacientes').parentElement.classList.add('hidden');
+    document.getElementById('contentAtendimentos').classList.remove('hidden');
+    document.getElementById('contentPacientes').classList.add('hidden');
     document.querySelector('.filters-group').style.display = 'flex';
     applyFilters();
 });
@@ -283,8 +284,8 @@ tabPacientes.addEventListener('click', () => {
     activeTab = 'pacientes';
     tabPacientes.classList.add('active');
     tabAtendimentos.classList.remove('active');
-    document.getElementById('tableAtendimentos').parentElement.classList.add('hidden');
-    document.getElementById('tablePacientes').parentElement.classList.remove('hidden');
+    document.getElementById('contentAtendimentos').classList.add('hidden');
+    document.getElementById('contentPacientes').classList.remove('hidden');
     document.querySelector('.filters-group').style.display = 'none';
     applyFilters();
 });
