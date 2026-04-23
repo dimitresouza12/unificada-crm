@@ -15,8 +15,13 @@ checkSession();
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    let email = document.getElementById('email').value.trim();
     
-    const email = document.getElementById('email').value;
+    // Tratamento de Usuário: se digitar 'unificada', mapeamos para o email real
+    if (email.toLowerCase() === 'unificada') {
+        email = 'unificadaclinica@gmail.com';
+    }
+    
     const password = document.getElementById('password').value;
     const btn = document.getElementById('btnLogin');
     const errorMsg = document.getElementById('errorMsg');
@@ -37,7 +42,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         window.location.href = 'index.html';
         
     } catch (err) {
-        errorMsg.innerText = 'Acesso negado: E-mail ou senha incorretos.';
+        errorMsg.innerText = 'Acesso negado: Usuário ou senha incorretos.';
         errorMsg.style.display = 'block';
     } finally {
         btn.innerHTML = 'Entrar';
