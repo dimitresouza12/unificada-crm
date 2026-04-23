@@ -71,8 +71,22 @@ function getStatusClass(status) {
 function getDentistName(patient) {
     if (patient.nome_dentista) return patient.nome_dentista; // Se ja tiver coluna propria
     if (!patient.memoria_contexto) return 'Não definida';
+    
+    // Captura o que vem depois de "Profissional Identificado:"
     const match = patient.memoria_contexto.match(/Profissional Identificado:\s*(.+)/i);
-    return (match && match[1]) ? match[1].trim() : 'Não definida';
+    if (!match || !match[1]) return 'Não definida';
+    
+    let name = match[1].trim();
+    
+    // Limpeza: remove colchetes, aspas e pontos finais extras
+    name = name.replace(/[\[\]"]/g, '').replace(/\.$/, '');
+    
+    // Se por acaso capturou uma linha de data (bug comum da IA) ou texto muito longo, ignoramos
+    if (name.toLowerCase().includes('data/hora') || name.toLowerCase().includes('horário') || name.length > 50) {
+        return 'Não definida';
+    }
+    
+    return name;
 }
 
 // Fetch data from Supabase
@@ -238,7 +252,9 @@ function applyFilters() {
 
         const matchesSearch = name.includes(term) || phone.includes(term);
         const matchesStatus = statusFilter === "" || status.includes(statusFilter);
-        const matchesDentist = dentistFilter === "" || dentist === dentistFilter;
+        
+        // Filtro de Dentista: usa .includes para achar o nome mesmo se houver mais de uma dentista na linha
+        const matchesDentist = dentistFilter === "" || (dentistFilter === "Não definida" ? dentist === "Não definida" : dentist.toLowerCase().includes(dentistFilter.toLowerCase()));
 
         return matchesSearch && matchesStatus && matchesDentist;
     });
@@ -250,10 +266,23 @@ function populateDentistFilter(data) {
     const select = document.getElementById('filterDentista');
     if (!select) return;
     const currentValue = select.value;
-    const dentists = [...new Set(data.map(p => getDentistName(p)))].filter(d => d !== 'Não definida');
+    
+    // Coleta todos os nomes, separa por "/" ou "," e gera uma lista única e limpa
+    let allDentists = [];
+    data.forEach(p => {
+        const name = getDentistName(p);
+        if (name !== 'Não definida') {
+            // Separa por barra ou vírgula e remove espaços extras
+            const parts = name.split(/[\/,]/).map(s => s.trim()).filter(s => s.length > 3);
+            allDentists.push(...parts);
+        }
+    });
+    
+    // Pega apenas os nomes únicos e organiza em ordem alfabética
+    const uniqueDentists = [...new Set(allDentists)].sort();
     
     select.innerHTML = '<option value="">Todas Dentistas</option><option value="Não definida">Não definida</option>';
-    dentists.forEach(d => {
+    uniqueDentists.forEach(d => {
         const opt = document.createElement('option');
         opt.value = d;
         opt.textContent = d;

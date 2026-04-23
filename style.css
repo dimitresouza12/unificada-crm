@@ -296,7 +296,7 @@ table {
 
 th {
     background-color: #F8FAFC;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -308,7 +308,7 @@ th {
 }
 
 td {
-    padding: 0.75rem 1rem;
+    padding: 0.6rem 0.5rem;
     border-bottom: 1px solid var(--border);
     font-size: 0.85rem;
     color: var(--text-main);
@@ -317,14 +317,14 @@ td {
     text-overflow: ellipsis;
 }
 
-/* Column Width Controls */
-.col-name { width: 180px; }
-.col-phone { width: 130px; }
-.col-proc { width: 180px; }
-.col-dentist { width: 140px; white-space: nowrap; }
-.col-status { width: 120px; }
-.col-date { width: 150px; }
-.col-actions { width: 130px; }
+/* Column Width Controls - Reduced to fit screen */
+.col-name { width: auto; max-width: 200px; }
+.col-phone { width: 110px; }
+.col-proc { width: auto; max-width: 150px; }
+.col-dentist { width: auto; max-width: 140px; }
+.col-status { width: 100px; }
+.col-date { width: 120px; font-size: 0.75rem; }
+.col-actions { width: 110px; }
 
 /* Force alignment for status and actions */
 th.col-status, td.col-status,
