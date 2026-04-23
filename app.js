@@ -733,7 +733,6 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
         </body>
         </html>
     `);
-    `);
     printWindow.document.close();
 });
 
