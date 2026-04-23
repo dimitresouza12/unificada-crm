@@ -662,10 +662,13 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
         if (el) prontData.fields[id] = el.value;
     });
 
+    const baseUrl = window.location.href.replace(/[^/]*$/, '');
+
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
         <head>
+            <base href="${baseUrl}">
             <title>Prontuário - ${name}</title>
             <style>
                 body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.5; }
@@ -693,10 +696,10 @@ document.getElementById('btnImprimirProntuario')?.addEventListener('click', () =
             <div style="text-align: right; margin-bottom: 20px;"><button class="no-print" onclick="window.print()" style="background: #7C3AED; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Imprimir Prontuário</button></div>
             
             <div class="clinic-header">
-                <img src="https://i.ibb.co/6y4tWvJ/logo-placeholder.png" alt="Logo Clínica" onerror="this.style.display='none'">
+                <img src="logo.png" alt="Logo Clínica" onerror="this.style.display='none'">
                 <div class="clinic-info">
                     <h1>Clínica Unificada</h1>
-                    <p>Av. Exemplo, 1000 - Centro | Telefone: (00) 0000-0000</p>
+                    <p>Rua Aluizio Gonzaga de Lima | Telefone/WhatsApp: (88) 98164-9777</p>
                 </div>
             </div>
 
@@ -747,10 +750,13 @@ document.getElementById('btnImprimirContrato')?.addEventListener('click', () => 
     const name = document.getElementById('prontuarioPacienteNome').textContent.replace('- ', '');
     const contratoText = document.getElementById('p-contrato').value || 'Nenhum contrato definido para este paciente.';
     
+    const baseUrl = window.location.href.replace(/[^/]*$/, '');
+    
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
         <head>
+            <base href="${baseUrl}">
             <title>Contrato - ${name}</title>
             <style>
                 body { font-family: 'Inter', sans-serif; padding: 40px; color: #333; line-height: 1.6; }
@@ -767,10 +773,10 @@ document.getElementById('btnImprimirContrato')?.addEventListener('click', () => 
             <div style="text-align: right; margin-bottom: 20px;"><button class="no-print" onclick="window.print()" style="background: #7C3AED; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">Imprimir Contrato</button></div>
             
             <div class="clinic-header">
-                <img src="https://i.ibb.co/6y4tWvJ/logo-placeholder.png" alt="Logo Clínica" onerror="this.style.display='none'">
+                <img src="logo.png" alt="Logo Clínica" onerror="this.style.display='none'">
                 <div class="clinic-info">
                     <h1>Clínica Unificada</h1>
-                    <p>Av. Exemplo, 1000 - Centro | Telefone: (00) 0000-0000</p>
+                    <p>Rua Aluizio Gonzaga de Lima | Telefone/WhatsApp: (88) 98164-9777</p>
                 </div>
             </div>
 
