@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Clinica - Painel</title>
+    <!-- Anti-Cache Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="theme-color" content="#7C3AED">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css?v=15">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="topbar">
+            <div class="logo">
+                <img src="logo.png" alt="Clínica Unificada Logo" class="brand-logo">
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="active">Painel</a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><i class="ph ph-user" style="font-size: 1.2rem;"></i></div>
+                <div class="user-info">
+                    <span class="name">Recepção</span>
+                    <button id="btnLogout" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.8rem; text-align:left; text-decoration:underline;">Sair do Sistema</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="page-header">
+                <h2>Gestão da Clínica</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" id="btnNovoAgendamento">
+                        <i class="ph ph-plus"></i> Novo Agendamento
+                    </button>
+                    <button class="btn btn-secondary" id="btnExportar">
+                        <i class="ph ph-export"></i> Exportar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tabs-navigation">
+                <button class="tab-btn active" id="tabAtendimentos" data-target="tabAtendimentos">Atendimentos (Leads)</button>
+                <button class="tab-btn" id="tabPacientes" data-target="tabPacientes">Ficha de Pacientes</button>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-card">
+                <div class="table-header" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <div class="search-bar" style="flex: 1; min-width: 250px;">
+                        <i class="ph ph-magnifying-glass"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar paciente...">
+                    </div>
+                    <div class="filters-group" style="display: flex; gap: 0.75rem;">
+                        <select id="filterStatus" class="btn btn-secondary" style="padding: 0.5rem; height: auto;">
+                            <option value="">Todos Status</option>
+                            <option value="Agendado">Agendado</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Confirmado">Confirmado</option>
+                            <option value="Concluído">Concluído</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                        <select id="filterDentista" class="btn btn-secondary" style="padding: 0.5rem; height: auto;">
+                            <option value="">Todas Dentistas</option>
+                            <!-- Dinâmico -->
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- ABA ATENDIMENTOS -->
+                <div class="table-container tab-content active" id="contentAtendimentos">
+                    <table id="tableAtendimentos">
+                        <thead>
+                            <tr>
+                                <th class="col-name">Paciente</th>
+                                <th class="col-phone">Telefone</th>
+                                <th class="col-proc">Procedimento</th>
+                                <th class="col-dentist">Dentista</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-date">Data Conversa</th>
+                                <th class="col-date">Data Agendamento</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyAtendimentos">
+                            <tr>
+                                <td colspan="7" class="loading-state">Carregando dados...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ABA PACIENTES -->
+                <div class="table-container tab-content hidden" id="contentPacientes">
+                    <table id="tablePacientes">
+                        <thead>
+                            <tr>
+                                <th class="col-name">Paciente</th>
+                                <th class="col-phone">Telefone</th>
+                                <th class="col-actions">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyPacientes">
+                            <tr>
+                                <td colspan="3" class="loading-state">Carregando pacientes...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-footer">
+                    <span class="results-count" id="resultsCount">Mostrando 0 resultados</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Prontuário Digital (Ficha Clínica Completa) -->
+    <div id="modalProntuario" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 950px; width: 95%; height: 95vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: var(--primary); color: white; padding: 1rem 1.5rem;">
+                <div>
+                    <h3 style="color: white; margin: 0;">Prontuário Odontológico Completo</h3>
+                    <p id="prontuarioPacienteNome" style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin: 4px 0 0 0;"></p>
+                </div>
+                <button class="btn-close" id="btnCloseProntuario" style="color: white;"><i class="ph ph-x"></i></button>
+            </div>
+            
+            <!-- Sub-Navegação do Prontuário -->
+            <div class="prontuario-tabs" style="display: flex; background: #F1F5F9; padding: 0 1rem; border-bottom: 1px solid var(--border);">
+                <button class="pront-tab-btn active" data-tab="tab-identificacao">Identificação</button>
+                <button class="pront-tab-btn" data-tab="tab-anamnese">Anamnese</button>
+                <button class="pront-tab-btn" data-tab="tab-exame">Exame Clínico</button>
+                <button class="pront-tab-btn" data-tab="tab-evolucao">Evolução & Plano</button>
+                <button class="pront-tab-btn" data-tab="tab-fotos">Fotos</button>
+                <button class="pront-tab-btn" data-tab="tab-contrato">Contrato</button>
+                <button class="pront-tab-btn" data-tab="tab-odontograma">Odontograma</button>
+            </div>
+
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+                <form id="formProntuario">
+                    <input type="hidden" id="prontuarioPacienteId">
+                    
+                    <!-- ABA 1: IDENTIFICAÇÃO -->
+                    <div id="tab-identificacao" class="pront-tab-content">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div class="form-group"><label>CPF</label><input type="text" id="p-cpf" placeholder="000.000.000-00"></div>
+                            <div class="form-group"><label>RG</label><input type="text" id="p-rg"></div>
+                            <div class="form-group"><label>Data de Nasc.</label><input type="date" id="p-nasc"></div>
+                            <div class="form-group"><label>Gênero</label><select id="p-genero"><option value="">Selecione</option><option>Masculino</option><option>Feminino</option><option>Outro</option></select></div>
+                            <div class="form-group"><label>Ocupação</label><input type="text" id="p-ocupacao"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Endereço</label><input type="text" id="p-endereco"></div>
+                            <div class="form-group"><label>Indicado Por</label><input type="text" id="p-indicado"></div>
+                            <div class="form-group"><label>Início Tratamento</label><input type="date" id="p-inicio"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Em caso de Emergência (Contato)</label><input type="text" id="p-emergencia"></div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 2: ANAMNESE -->
+                    <div id="tab-anamnese" class="pront-tab-content hidden">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="anamnese-row"><label>Possui algum problema de saúde?</label><div class="radio-group"><input type="text" id="a-saude" placeholder="Sim/Não. Qual?"></div></div>
+                            <div class="anamnese-row"><label>Está sob tratamento médico?</label><div class="radio-group"><input type="text" id="a-tratamento" placeholder="Por quê?"></div></div>
+                            <div class="anamnese-row"><label>Faz uso de medicamentos?</label><div class="radio-group"><input type="text" id="a-medicamentos" placeholder="Quais?"></div></div>
+                            <div class="anamnese-row"><label>Tem alergia a algum medicamento?</label><div class="radio-group"><input type="text" id="a-alergia" placeholder="Quais?"></div></div>
+                            <div class="anamnese-row"><label>Como costuma estar sua pressão?</label><div class="radio-group"><input type="text" id="a-pressao"></div></div>
+                            <div class="anamnese-row"><label>Fumante?</label><div class="radio-group"><input type="text" id="a-fumante"></div></div>
+                            <div class="anamnese-row"><label>Sensibilidade ou Sangramento gengival?</label><div class="radio-group"><input type="text" id="a-gengiva"></div></div>
+                            <div class="anamnese-row"><label>Hábitos (Rói unhas, morde canetas)?</label><div class="radio-group"><input type="text" id="a-habitos"></div></div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 3: EXAME CLÍNICO -->
+                    <div id="tab-exame" class="pront-tab-content hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: var(--primary);">Exame Intra-Oral</h4>
+                                <div class="form-group"><label>Higiene</label><select id="e-higiene"><option>Boa</option><option>Regular</option><option>Ruim</option></select></div>
+                                <div class="form-group"><label>Halitose</label><select id="e-halitose"><option>Ausente</option><option>Leve</option><option>Forte</option></select></div>
+                                <div class="form-group"><label>Mucosa / Língua</label><input type="text" id="e-mucosa"></div>
+                                <div class="form-group"><label>Palato / Lábios</label><input type="text" id="e-palato"></div>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: var(--primary);">Observações Gerais</h4>
+                                <textarea id="e-obs" rows="8" style="width: 100%;" placeholder="Observações do exame clínico..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 4: EVOLUÇÃO & PLANO -->
+                    <div id="tab-evolucao" class="pront-tab-content hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;">
+                            <div class="timeline-section">
+                                <h4 style="margin-bottom: 1rem;">Linha do Tempo</h4>
+                                <div id="timelineContainer" class="timeline-container" style="max-height: 300px; overflow-y: auto;"></div>
+                                <div style="margin-top: 1.5rem;">
+                                    <label>Nova Evolução / Anotação</label>
+                                    <textarea id="inputProntuarioText" rows="4" style="width: 100%;" placeholder="O que foi feito hoje?"></textarea>
+                                </div>
+                            </div>
+                            <div class="plano-section">
+                                <h4 style="margin-bottom: 1rem;">Plano de Tratamento</h4>
+                                <textarea id="p-plano" rows="15" style="width: 100%; background: #FFFBEB; border-color: #FDE68A;" placeholder="Descreva o planejamento das próximas sessões..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 5: FOTOS -->
+                    <div id="tab-fotos" class="pront-tab-content hidden">
+                        <div class="photos-section">
+                            <h4 style="margin-bottom: 1rem;">Galeria de Imagens</h4>
+                            <div id="photoGallery" class="photo-gallery" style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem;"></div>
+                            <div style="margin-top: 1rem;">
+                                <label for="inputFotos" class="btn btn-secondary" style="cursor: pointer;">
+                                    <i class="ph ph-upload-simple"></i> Adicionar Foto
+                                </label>
+                                <input type="file" id="inputFotos" multiple accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 6: CONTRATO -->
+                    <div id="tab-contrato" class="pront-tab-content hidden">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0;">Contrato de Prestação de Serviços</h4>
+                            <button type="button" class="btn btn-secondary" id="btnImprimirContrato" style="background: #E2E8F0; color: #475569;">
+                                <i class="ph ph-printer"></i> Imprimir Contrato
+                            </button>
+                        </div>
+                        <textarea id="p-contrato" rows="15" style="width: 100%; font-family: monospace;" placeholder="Texto do contrato..."></textarea>
+                    </div>
+
+
+                    <!-- ABA 7: ODONTOGRAMA -->
+                    <div id="tab-odontograma" class="pront-tab-content hidden">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <h4 style="color: var(--primary);">Mapa Dental Interativo</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Clique no dente para mudar a situação clínica</p>
+                        </div>
+                        
+                        <div class="odontograma-container">
+                            <!-- Arcada Superior -->
+                            <div class="teeth-row superior" id="teeth-superior"></div>
+                            <div style="height: 40px;"></div>
+                            <!-- Arcada Inferior -->
+                            <div class="teeth-row inferior" id="teeth-inferior"></div>
+                        </div>
+
+                        <div id="toothSelector" class="tooth-selector hidden">
+                            <h5>Dente <span id="selectedToothNum">--</span></h5>
+                            <div class="selector-options">
+                                <button type="button" class="opt-higido" data-status="higido">Hígido</button>
+                                <button type="button" class="opt-carie" data-status="carie">Cárie</button>
+                                <button type="button" class="opt-restaurado" data-status="restaurado">Restaurado</button>
+                                <button type="button" class="opt-canal" data-status="canal">Canal</button>
+                                <button type="button" class="opt-ausente" data-status="ausente">Ausente</button>
+                                <button type="button" class="opt-protese" data-status="protese">Prótese</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <button type="button" class="btn btn-secondary" id="btnImprimirProntuario" style="background: #E2E8F0; color: #475569;">
+                        <i class="ph ph-printer"></i> Imprimir / PDF
+                    </button>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" id="btnCancelProntuario">Sair sem salvar</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarProntuario" style="background: var(--primary);">Salvar Ficha Completa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Agendamento -->
+    <div id="modalNovoAgendamento" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Agendamento</h3>
+                <button class="btn-close" id="btnCloseModal"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovoAgendamento">
+                    <div class="form-group">
+                        <label for="inputNome">Nome do Paciente</label>
+                        <input type="text" id="inputNome" required placeholder="Ex: João da Silva">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputTelefone">Telefone / WhatsApp</label>
+                        <input type="text" id="inputTelefone" required placeholder="Ex: 5588999999999">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputProcedimento">Procedimento</label>
+                        <input type="text" id="inputProcedimento" required placeholder="Ex: Avaliação Geral">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputStatus">Status</label>
+                        <select id="inputStatus" required>
+                            <option value="Agendado">Agendado</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Concluído">Concluído</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputData">Data e Hora</label>
+                        <input type="datetime-local" id="inputData" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnSalvarAgendamento">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase JS via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Excel Export (SheetJS) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- SaaS Config -->
+    <script src="config.js?v=1"></script>
+    <!-- Main App Logic -->
+    <script src="app.js?v=30"></script>
+</body>
+</html>
