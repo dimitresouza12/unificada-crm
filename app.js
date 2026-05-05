@@ -13,6 +13,7 @@ const SUPABASE_URL = CONFIG.SUPABASE_URL;
 const SUPABASE_KEY = CONFIG.SUPABASE_KEY;
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseN8N = window.supabase.createClient(CONFIG.N8N_SUPABASE_URL, CONFIG.N8N_SUPABASE_KEY);
 
 // Dados da clínica logada (carregados pelo auth.js no sessionStorage)
 const CLINIC = {
@@ -228,7 +229,7 @@ function renderTable(data, shouldPopulateDentists = true) {
                 <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
                 <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
                 <td class="col-actions">
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
                         <i class="ph ph-file-text"></i> Prontuário
                     </button>
                 </td>
@@ -351,10 +352,12 @@ document.addEventListener('click', async (e) => {
     if (btn) {
         const patientId = btn.getAttribute('data-id');
         const name = btn.getAttribute('data-name');
+        const phone = btn.getAttribute('data-phone');
         
         document.getElementById('prontuarioPacienteId').value = patientId;
         document.getElementById('prontuarioPacienteNome').textContent = '- ' + name;
         document.getElementById('inputProntuarioText').value = '';
+        document.getElementById('formProntuario').setAttribute('data-patient-phone', phone || '');
         
         // Reset sub-tabs to first one
         document.querySelectorAll('.pront-tab-btn')[0].click();
@@ -944,36 +947,33 @@ document.getElementById('btnImprimirContrato')?.addEventListener('click', () => 
 // Export Functionality (Active Tab Only)
 document.getElementById('btnExportar')?.addEventListener('click', () => {
     const isAtendimentos = activeTab === 'atendimentos';
-    const sourceData = isAtendimentos ? allPatients : allPatients.filter(p => {
-        const s1 = String(p.status || p.ai_service).toLowerCase();
-        const s2 = String(p.memoria_contexto || '').toLowerCase();
-        return s1.includes('agendado') || s1.includes('confirmado') || s1.includes('conclu') || s2.includes('agendado');
-    });
 
-    if (sourceData.length === 0) {
+    if (isAtendimentos && allAppointments.length === 0) {
+        alert('Não há dados para exportar nesta aba.');
+        return;
+    }
+    if (!isAtendimentos && allPatients.length === 0) {
         alert('Não há dados para exportar nesta aba.');
         return;
     }
 
     // Preparar os dados para o Excel
-    const exportData = sourceData.map(p => {
-        if (isAtendimentos) {
-            return {
-                "Paciente": p.patient_name || p.nome || 'Desconhecido',
-                "Telefone": formatPhone(p.phone || p.telefone || p.identifier),
-                "Procedimento": p.procedure || p.procedimento || 'Não informado',
-                "Dentista": getDentistName(p),
-                "Status": p.status || p.ai_service || 'Pendente',
-                "Data Conversa": formatDate(p.created_at),
-                "Data Agendamento": formatDate(p.appointment_date || p.data_agendamento)
-            };
-        } else {
-            return {
-                "Paciente": p.patient_name || p.nome || 'Desconhecido',
-                "Telefone": formatPhone(p.phone || p.telefone || p.identifier)
-            };
-        }
-    });
+    let exportData;
+    if (isAtendimentos) {
+        exportData = allAppointments.map(appt => ({
+            "Paciente": appt.patients?.name || 'Desconhecido',
+            "Telefone": formatPhone(appt.patients?.phone),
+            "Procedimento": appt.procedure_name || 'Não informado',
+            "Status": appt.status || 'Pendente',
+            "Data Agendamento": formatDate(appt.scheduled_at),
+            "Data Criação": formatDate(appt.created_at)
+        }));
+    } else {
+        exportData = allPatients.map(p => ({
+            "Paciente": p.name || 'Desconhecido',
+            "Telefone": formatPhone(p.phone)
+        }));
+    }
 
     // Criar a planilha usando a biblioteca XLSX
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -982,7 +982,7 @@ document.getElementById('btnExportar')?.addEventListener('click', () => {
 
     // Ajustar largura das colunas automaticamente
     const wscols = isAtendimentos 
-        ? [{wch:30}, {wch:20}, {wch:25}, {wch:20}, {wch:15}, {wch:20}, {wch:20}]
+        ? [{wch:30}, {wch:20}, {wch:25}, {wch:15}, {wch:20}, {wch:20}]
         : [{wch:30}, {wch:20}];
     worksheet['!cols'] = wscols;
 
@@ -990,3 +990,270 @@ document.getElementById('btnExportar')?.addEventListener('click', () => {
     const fileName = `export_${activeTab}_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
 });
+
+// --- NAVEGAÇÃO ENTRE MÓDULOS (VIEWS) ---
+const navLinks = document.querySelectorAll('.nav-links a[data-view]');
+const viewSections = document.querySelectorAll('.view-section');
+
+navLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetView = link.getAttribute('data-view');
+        
+        // Atualizar menu ativo
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        // Atualizar view ativa
+        viewSections.forEach(section => {
+            if (section.id === targetView) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+
+        // Chamar funções específicas de cada módulo ao abrir
+        if (targetView === 'dashboardView') renderDashboard();
+        if (targetView === 'financeiroView') fetchFinancials();
+        if (targetView === 'equipeView') fetchProfessionals();
+        if (targetView === 'configView') loadSettings();
+    });
+});
+
+// --- DASHBOARD ---
+function renderDashboard() {
+    const totalPacientes = allPatients.length;
+    const totalAgendamentos = allAppointments.length;
+    
+    const dashPacientes = document.getElementById('dashTotalPacientes');
+    const dashAtend = document.getElementById('dashAtendimentosMes');
+    
+    if (dashPacientes) dashPacientes.textContent = totalPacientes;
+    if (dashAtend) dashAtend.textContent = totalAgendamentos;
+}
+
+// --- FINANCEIRO ---
+const btnNovaReceita = document.getElementById('btnNovaReceita');
+const modalFinanceiro = document.getElementById('modalFinanceiro');
+const closeModalFinanceiro = document.getElementById('closeModalFinanceiro');
+const btnCancelFinanceiro = document.getElementById('btnCancelFinanceiro');
+
+if (btnNovaReceita) {
+    btnNovaReceita.addEventListener('click', () => {
+        const select = document.getElementById('finPaciente');
+        if (select) {
+            select.innerHTML = '';
+            allPatients.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.name || p.phone}</option>`;
+            });
+        }
+        if (modalFinanceiro) modalFinanceiro.classList.remove('hidden');
+    });
+}
+
+function closeFinModal() {
+    if (modalFinanceiro) modalFinanceiro.classList.add('hidden');
+}
+if (closeModalFinanceiro) closeModalFinanceiro.addEventListener('click', closeFinModal);
+if (btnCancelFinanceiro) btnCancelFinanceiro.addEventListener('click', closeFinModal);
+
+document.getElementById('formFinanceiro')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alert('Lançamento salvo! (Função de salvamento financeiro a ser implementada com tabela financial)');
+    closeFinModal();
+});
+
+function fetchFinancials() {
+    // Mock temporário para renderizar a tabela
+    const tbody = document.getElementById('tableBodyFinanceiro');
+    if (tbody && tbody.innerHTML.trim() === '') {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhum lançamento encontrado.</td></tr>';
+    }
+}
+
+// --- EQUIPE ---
+const btnNovoProfissional = document.getElementById('btnNovoProfissional');
+const modalEquipe = document.getElementById('modalEquipe');
+const closeModalEquipe = document.getElementById('closeModalEquipe');
+const btnCancelEquipe = document.getElementById('btnCancelEquipe');
+
+if (btnNovoProfissional) {
+    btnNovoProfissional.addEventListener('click', () => {
+        if (modalEquipe) modalEquipe.classList.remove('hidden');
+    });
+}
+
+function closeEqpModal() {
+    if (modalEquipe) modalEquipe.classList.add('hidden');
+}
+if (closeModalEquipe) closeModalEquipe.addEventListener('click', closeEqpModal);
+if (btnCancelEquipe) btnCancelEquipe.addEventListener('click', closeEqpModal);
+
+document.getElementById('formEquipe')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('eqpNome').value;
+    const especialidade = document.getElementById('eqpEspecialidade').value;
+    const n8n_calendar = document.getElementById('eqpCalendar').value;
+
+    try {
+        const { error } = await supabaseClient
+            .from('professionals')
+            .insert([{
+                clinic_id: CLINIC.id,
+                name: nome,
+                specialty: especialidade,
+                n8n_calendar_id: n8n_calendar
+            }]);
+            
+        if (error) throw error;
+        alert('Profissional adicionado com sucesso!');
+        closeEqpModal();
+        fetchProfessionals();
+    } catch (err) {
+        alert('Erro ao salvar profissional: ' + err.message);
+    }
+});
+
+async function fetchProfessionals() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('professionals')
+            .select('*')
+            .eq('clinic_id', CLINIC.id)
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+        
+        const tbody = document.getElementById('tableBodyEquipe');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3">Nenhum profissional cadastrado.</td></tr>';
+            return;
+        }
+
+        data.forEach(p => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.specialty || '-'}</td>
+                    <td>${p.n8n_calendar_id || '-'}</td>
+                </tr>
+            `;
+        });
+    } catch(err) {
+        console.error('Erro buscando equipe', err);
+    }
+}
+
+// --- CONFIGURAÇÕES ---
+function loadSettings() {
+    const inputName = document.getElementById('configClinicName');
+    if (inputName) inputName.value = CLINIC.name;
+}
+document.getElementById('formSettings')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    alert('Configurações salvas (mock). A atualização do clinic_users requer endpoint específico.');
+});
+
+// --- CHAT N8N (SOMENTE LEITURA) ---
+async function loadChatMessages(patientPhone) {
+    const chatBox = document.getElementById('chatMessagesBox');
+    if (!chatBox) return;
+    
+    chatBox.innerHTML = '<p class="empty-chat">Carregando histórico de mensagens...</p>';
+    
+    try {
+        if (!patientPhone) {
+            chatBox.innerHTML = '<p class="empty-chat">Paciente sem número de telefone cadastrado.</p>';
+            return;
+        }
+
+        const phoneClean = String(patientPhone).replace(/\D/g, '');
+
+        // Tentar tabela chat_messages primeiro
+        const { data, error } = await supabaseN8N
+            .from('chat_messages')
+            .select('*')
+            .eq('sessionId', phoneClean)
+            .order('createdAt', { ascending: true })
+            .limit(100);
+
+        if (error) {
+            // Se falhar, tentar n8n_chat_histories
+            console.warn("Falha buscando 'chat_messages', tentando 'n8n_chat_histories'", error);
+            const { data: data2, error: err2 } = await supabaseN8N
+                .from('n8n_chat_histories')
+                .select('*')
+                .eq('session_id', phoneClean)
+                .order('created_at', { ascending: true })
+                .limit(100);
+                
+            if (err2) throw err2;
+            renderMessages(chatBox, data2, 'n8n_chat_histories');
+            return;
+        }
+        
+        renderMessages(chatBox, data, 'chat_messages');
+
+    } catch (err) {
+        console.error('Erro lendo do N8N:', err);
+        chatBox.innerHTML = '<p class="empty-chat">Não foi possível carregar o histórico de conversas.</p>';
+    }
+}
+
+function renderMessages(container, messages, tableType) {
+    if (!messages || messages.length === 0) {
+        container.innerHTML = '<p class="empty-chat">Nenhum histórico de conversa encontrado com este paciente.</p>';
+        return;
+    }
+
+    container.innerHTML = '';
+    messages.forEach(msg => {
+        let text = 'Mensagem...';
+        let sender = 'received';
+        let date = '';
+
+        if (tableType === 'chat_messages') {
+            text = typeof msg.message === 'object' ? (msg.message.text || msg.message.content) : msg.message;
+            sender = msg.sender === 'user' ? 'received' : 'sent';
+            date = msg.createdAt;
+        } else {
+            text = typeof msg.message === 'object' ? msg.message.data?.content : msg.message;
+            sender = msg.message?.type === 'human' ? 'received' : 'sent';
+            date = msg.created_at;
+        }
+
+        const timeStr = date ? new Date(date).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+        const safeText = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+
+        container.innerHTML += `
+            <div class="chat-message ${sender}">
+                ${safeText}
+                <span class="time">${timeStr}</span>
+            </div>
+        `;
+    });
+    
+    // Auto scroll para o final
+    container.scrollTop = container.scrollHeight;
+}
+
+// Ligar o clique da tab do Chat IA à função de carregar mensagens
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.pront-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetId = btn.getAttribute('data-tab');
+            if (targetId === 'prontChat') {
+                const formProntuario = document.getElementById('formProntuario');
+                if (formProntuario) {
+                    const phone = formProntuario.getAttribute('data-patient-phone');
+                    loadChatMessages(phone);
+                }
+            }
+        });
+    });
+});
+
