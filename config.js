@@ -14,7 +14,7 @@ const CONFIG = {
     // Para gerar: Google Cloud Console → APIs & Services → Credentials → Create API Key
     // Ativar: Google Calendar API em "Enabled APIs"
     // Restringir: apenas Google Calendar API + seu domínio
-    GOOGLE_API_KEY: '',
+    GOOGLE_API_KEY: 'AIzaSyDdisDeT0MDtB_sKdP-Ddk4CdNqHB4gzY0',
     
     APP_NAME: 'My Clinica',
     VERSION: '1.0.0'
