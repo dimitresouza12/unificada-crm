@@ -1014,10 +1014,10 @@ navLinks.forEach(link => {
         });
 
         // Chamar funções específicas de cada módulo ao abrir
-        if (targetView === 'dashboardView') renderDashboard();
-        if (targetView === 'financeiroView') fetchFinancials();
-        if (targetView === 'equipeView') fetchProfessionals();
-        if (targetView === 'configView') loadSettings();
+        if (targetView === 'viewDashboard') renderDashboard();
+        if (targetView === 'viewFinanceiro') fetchFinancials();
+        if (targetView === 'viewEquipe') fetchProfessionals();
+        if (targetView === 'viewConfig') loadSettings();
     });
 });
 
@@ -1034,13 +1034,13 @@ function renderDashboard() {
 }
 
 // --- FINANCEIRO ---
-const btnNovaReceita = document.getElementById('btnNovaReceita');
+const btnNovoLancamento = document.getElementById('btnNovoLancamento');
 const modalFinanceiro = document.getElementById('modalFinanceiro');
 const closeModalFinanceiro = document.getElementById('closeModalFinanceiro');
 const btnCancelFinanceiro = document.getElementById('btnCancelFinanceiro');
 
-if (btnNovaReceita) {
-    btnNovaReceita.addEventListener('click', () => {
+if (btnNovoLancamento) {
+    btnNovoLancamento.addEventListener('click', () => {
         const select = document.getElementById('finPaciente');
         if (select) {
             select.innerHTML = '';
