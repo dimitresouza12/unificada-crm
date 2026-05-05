@@ -186,7 +186,7 @@ async function fetchPatients() {
 function renderTable(data, shouldPopulateDentists = true) {
     if (data.length === 0 && allAppointments.length === 0) {
         document.getElementById('tableBodyAtendimentos').innerHTML = `<tr><td colspan="7" class="loading-state">Nenhum agendamento encontrado.</td></tr>`;
-        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="6" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
+        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="4" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
         resultsCount.textContent = 'Mostrando 0 resultados';
         return;
     }
@@ -216,22 +216,28 @@ function renderTable(data, shouldPopulateDentists = true) {
     }).join('');
     document.getElementById('tableBodyAtendimentos').innerHTML = htmlAtendimentos || `<tr><td colspan="7" class="loading-state">Nenhum agendamento encontrado.</td></tr>`;
 
-    // ABA PACIENTES → Mostra todos os pacientes com botão Prontuário
+    // ABA PACIENTES → Mostra todos os pacientes com botões Prontuário e Editar
     if (data.length === 0) {
-        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="3" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
+        document.getElementById('tableBodyPacientes').innerHTML = `<tr><td colspan="4" class="loading-state">Nenhum paciente encontrado.</td></tr>`;
     } else {
         const htmlPacientes = data.map(patient => {
             const cleanPhone = formatPhone(patient.phone);
             const patientName = (patient.name || 'Desconhecido').replace(/"/g, '&quot;');
+            const patientEmail = patient.email || '-';
             const recordId = patient.id;
+            const rawPhone = patient.phone || '';
 
             return `
             <tr>
                 <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
                 <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
-                <td class="col-actions">
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}" style="background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; margin: 0 auto;">
+                <td class="col-email" title="${patientEmail}">${patientEmail}</td>
+                <td class="col-actions" style="display: flex; gap: 6px; justify-content: center;">
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;">
                         <i class="ph ph-file-text"></i> Prontuário
+                    </button>
+                    <button class="btn-action edit-patient" data-id="${recordId}" data-name="${patientName}" data-phone="${rawPhone}" data-email="${patientEmail}" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;">
+                        <i class="ph ph-pencil-simple"></i> Editar
                     </button>
                 </td>
             </tr>
@@ -1019,6 +1025,7 @@ navLinks.forEach(link => {
         if (targetView === 'viewDashboard') renderDashboard();
         if (targetView === 'viewFinanceiro') fetchFinancials();
         if (targetView === 'viewEquipe') fetchProfessionals();
+        if (targetView === 'viewAgenda') renderAgenda();
         if (targetView === 'viewConfig') loadSettings();
     });
 });
@@ -1235,7 +1242,6 @@ if (btnCancelEquipe) btnCancelEquipe.addEventListener('click', closeEqpModal);
 document.getElementById('formEquipe')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const nome = document.getElementById('eqpNome').value;
-    const especialidade = document.getElementById('eqpEspecialidade').value;
     const n8n_calendar = document.getElementById('eqpCalendar').value;
 
     try {
@@ -1244,8 +1250,7 @@ document.getElementById('formEquipe')?.addEventListener('submit', async (e) => {
             .insert([{
                 clinic_id: CLINIC.id,
                 name: nome,
-                specialty: especialidade,
-                n8n_calendar_id: n8n_calendar
+                google_calendar_id: n8n_calendar
             }]);
             
         if (error) throw error;
@@ -1267,6 +1272,8 @@ async function fetchProfessionals() {
 
         if (error) throw error;
         
+        allProfessionals = data || [];
+        
         const tbody = document.getElementById('tableBodyEquipe');
         if (!tbody) return;
         
@@ -1281,7 +1288,8 @@ async function fetchProfessionals() {
                 <tr>
                     <td>${p.name}</td>
                     <td>${p.specialty || '-'}</td>
-                    <td>${p.n8n_calendar_id || '-'}</td>
+                    <td>${p.google_calendar_id || '-'}</td>
+                    <td>${new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
                 </tr>
             `;
         });
@@ -1397,5 +1405,182 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+});
+
+// --- EDITAR PACIENTE ---
+const modalEditPatient = document.getElementById('modalEditPatient');
+const closeEditPatient = document.getElementById('closeEditPatient');
+const btnCancelEditPatient = document.getElementById('btnCancelEditPatient');
+
+function closeEditPatientModal() {
+    if (modalEditPatient) modalEditPatient.classList.add('hidden');
+}
+if (closeEditPatient) closeEditPatient.addEventListener('click', closeEditPatientModal);
+if (btnCancelEditPatient) btnCancelEditPatient.addEventListener('click', closeEditPatientModal);
+
+// Delegated click handler for edit patient buttons
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.edit-patient');
+    if (btn) {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        const phone = btn.getAttribute('data-phone');
+        const email = btn.getAttribute('data-email');
+        
+        document.getElementById('editPatientId').value = id;
+        document.getElementById('editPatientName').value = name;
+        document.getElementById('editPatientPhone').value = phone || '';
+        document.getElementById('editPatientEmail').value = (email && email !== '-') ? email : '';
+        
+        if (modalEditPatient) modalEditPatient.classList.remove('hidden');
+    }
+});
+
+document.getElementById('formEditPatient')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('editPatientId').value;
+    const name = document.getElementById('editPatientName').value;
+    const phone = document.getElementById('editPatientPhone').value;
+    const email = document.getElementById('editPatientEmail').value;
+
+    try {
+        const updateObj = { name, phone };
+        if (email) updateObj.email = email;
+        
+        const { error } = await supabaseClient
+            .from('patients')
+            .update(updateObj)
+            .eq('id', id);
+            
+        if (error) throw error;
+        alert('Paciente atualizado com sucesso!');
+        closeEditPatientModal();
+        fetchPatients();
+    } catch (err) {
+        alert('Erro ao atualizar paciente: ' + err.message);
+    }
+});
+
+// --- AGENDA (FullCalendar + Google Calendar) ---
+let allProfessionals = [];
+let calendarInstance = null;
+
+function renderAgenda() {
+    const container = document.getElementById('calendarContainer');
+    if (!container || !window.FullCalendar) return;
+    
+    // Fetch professionals with Google Calendar IDs
+    fetchProfessionalsForAgenda().then(() => {
+        if (calendarInstance) {
+            calendarInstance.destroy();
+        }
+        
+        // Build Google Calendar sources from professionals
+        const googleCalendarSources = allProfessionals
+            .filter(p => p.google_calendar_id)
+            .map((p, index) => {
+                const colors = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
+                return {
+                    googleCalendarId: p.google_calendar_id,
+                    className: 'gcal-event',
+                    color: colors[index % colors.length],
+                    textColor: '#fff',
+                    extendedProps: { professionalName: p.name }
+                };
+            });
+
+        // Build events from local appointments
+        const localEvents = allAppointments.map(appt => ({
+            title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
+            start: appt.scheduled_at,
+            end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
+            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED',
+            extendedProps: { status: appt.status, patientId: appt.patient_id }
+        }));
+
+        calendarInstance = new FullCalendar.Calendar(container, {
+            initialView: 'timeGridWeek',
+            locale: 'pt-br',
+            height: 'auto',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            buttonText: {
+                today: 'Hoje',
+                month: 'Mês',
+                week: 'Semana',
+                day: 'Dia'
+            },
+            slotMinTime: '07:00:00',
+            slotMaxTime: '21:00:00',
+            allDaySlot: false,
+            nowIndicator: true,
+            editable: false,
+            selectable: false,
+            events: localEvents,
+            eventDidMount: function(info) {
+                info.el.title = info.event.title + 
+                    (info.event.extendedProps.status ? ' (' + info.event.extendedProps.status + ')' : '') +
+                    (info.event.extendedProps.professionalName ? ' - Dra. ' + info.event.extendedProps.professionalName : '');
+            }
+        });
+
+        calendarInstance.render();
+        
+        // Populate filter
+        const filterSelect = document.getElementById('agendaProfessionalFilter');
+        if (filterSelect) {
+            filterSelect.innerHTML = '<option value="">Todas as Dentistas</option>';
+            allProfessionals.forEach(p => {
+                filterSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            });
+        }
+    });
+}
+
+async function fetchProfessionalsForAgenda() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('professionals')
+            .select('*')
+            .eq('clinic_id', CLINIC.id)
+            .order('name', { ascending: true });
+        
+        if (error) throw error;
+        allProfessionals = data || [];
+    } catch(err) {
+        console.error('Erro buscando profissionais para agenda:', err);
+    }
+}
+
+// Filter agenda by professional
+document.getElementById('agendaProfessionalFilter')?.addEventListener('change', (e) => {
+    const selectedId = e.target.value;
+    if (!calendarInstance) return;
+    
+    if (!selectedId) {
+        // Show all events
+        const localEvents = allAppointments.map(appt => ({
+            title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
+            start: appt.scheduled_at,
+            end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
+            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED'
+        }));
+        calendarInstance.removeAllEvents();
+        localEvents.forEach(ev => calendarInstance.addEvent(ev));
+    } else {
+        // Filter by professional_id
+        const filtered = allAppointments.filter(a => a.professional_id === selectedId);
+        const events = filtered.map(appt => ({
+            title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
+            start: appt.scheduled_at,
+            end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
+            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED'
+        }));
+        calendarInstance.removeAllEvents();
+        events.forEach(ev => calendarInstance.addEvent(ev));
+    }
 });
 
