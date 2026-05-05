@@ -26,6 +26,7 @@
             </div>
             <nav class="nav-links">
                 <a href="#" class="nav-item active" data-view="viewPacientes">Pacientes e Leads</a>
+                <a href="#" class="nav-item" data-view="viewAgenda">Agenda</a>
                 <a href="#" class="nav-item" data-view="viewDashboard">Dashboard</a>
                 <a href="#" class="nav-item" data-view="viewFinanceiro">Financeiro</a>
                 <a href="#" class="nav-item" data-view="viewEquipe">Equipe</a>
@@ -114,6 +115,7 @@
                             <tr>
                                 <th class="col-name">Paciente</th>
                                 <th class="col-phone">Telefone</th>
+                                <th class="col-email">Email</th>
                                 <th class="col-actions">Ações</th>
                             </tr>
                         </thead>
@@ -129,6 +131,57 @@
                 </div>
             </div>
             </div> <!-- Fim View Pacientes -->
+
+            <!-- VIEW AGENDA -->
+            <div id="viewAgenda" class="view-section">
+                <div class="page-header">
+                    <h2><i class="ph ph-calendar-dots" style="margin-right: 8px;"></i>Agenda Integrada</h2>
+                    <div class="header-actions" style="display: flex; gap: 0.75rem; align-items: center;">
+                        <select id="agendaProfessionalFilter" class="btn btn-secondary" style="padding: 0.5rem 1rem; height: auto; min-width: 180px;">
+                            <option value="">Todas as Dentistas</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnNovoEventoGCal" title="Criar novo evento no Google Calendar">
+                            <i class="ph ph-plus"></i> Novo Evento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Calendar Status -->
+                <div id="gcalStatus" class="gcal-status" style="display: none;">
+                    <div class="gcal-status-icon"><i class="ph ph-warning-circle"></i></div>
+                    <div class="gcal-status-text">
+                        <strong>Google Calendar não configurado</strong>
+                        <p>Adicione sua <code>GOOGLE_API_KEY</code> no arquivo <code>config.js</code> para sincronizar com o Google Calendar. 
+                        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Gerar API Key →</a></p>
+                    </div>
+                </div>
+
+                <!-- Professional Legend -->
+                <div id="agendaLegend" class="agenda-legend" style="display: none;"></div>
+
+                <!-- Calendar Container -->
+                <div class="agenda-card">
+                    <div id="calendarContainer" style="min-height: 650px;"></div>
+                </div>
+
+                <!-- Event Detail Panel (appears on click) -->
+                <div id="eventDetailPanel" class="event-detail-panel hidden">
+                    <div class="event-detail-header">
+                        <h4 id="eventDetailTitle">Detalhes do Evento</h4>
+                        <button id="closeEventDetail" class="btn-close-sm"><i class="ph ph-x"></i></button>
+                    </div>
+                    <div class="event-detail-body">
+                        <div class="detail-row"><i class="ph ph-clock"></i> <span id="eventDetailTime"></span></div>
+                        <div class="detail-row"><i class="ph ph-user"></i> <span id="eventDetailProfessional"></span></div>
+                        <div class="detail-row"><i class="ph ph-note"></i> <span id="eventDetailDesc"></span></div>
+                    </div>
+                    <div class="event-detail-actions">
+                        <a id="eventDetailEditLink" href="#" target="_blank" class="btn btn-primary btn-sm">
+                            <i class="ph ph-pencil-simple"></i> Editar no Google Calendar
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- VIEW DASHBOARD -->
             <div id="viewDashboard" class="view-section">
@@ -507,16 +560,13 @@
             </div>
             <div class="modal-body">
                 <form id="formEquipe">
+                    <input type="hidden" id="eqpEditId">
                     <div class="form-group">
                         <label>Nome do Dentista</label>
                         <input type="text" id="eqpNome" required>
                     </div>
                     <div class="form-group">
-                        <label>Especialidade</label>
-                        <input type="text" id="eqpEspecialidade">
-                    </div>
-                    <div class="form-group">
-                        <label>Google Calendar ID (n8n)</label>
+                        <label>Google Calendar ID</label>
                         <input type="text" id="eqpCalendar" placeholder="ex: agenda@gmail.com">
                     </div>
                     <div class="modal-footer">
@@ -528,15 +578,48 @@
         </div>
     </div>
 
+    <!-- Modal Editar Paciente -->
+    <div id="modalEditPatient" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Editar Paciente</h2>
+                <button class="btn-close" id="closeEditPatient"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditPatient">
+                    <input type="hidden" id="editPatientId">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" id="editPatientName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone / WhatsApp</label>
+                        <input type="text" id="editPatientPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="editPatientEmail">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btnCancelEditPatient">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FullCalendar via CDN (includes Google Calendar plugin) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
     <!-- Excel Export (SheetJS) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- SaaS Config -->
-    <script src="config.js?v=1"></script>
+    <script src="config.js?v=2"></script>
     <!-- Main App Logic -->
-    <script src="app.js?v=30"></script>
+    <script src="app.js?v=32"></script>
 </body>
 </html>

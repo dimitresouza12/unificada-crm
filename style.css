@@ -881,3 +881,254 @@ tbody tr:hover {
     background: rgba(255,255,255,0.7);
     border-radius: 8px;
 }
+
+/* FullCalendar Overrides */
+.fc {
+    font-family: 'Inter', sans-serif !important;
+}
+.fc .fc-toolbar-title {
+    font-size: 1.2rem !important;
+    font-weight: 600;
+    color: var(--text-main);
+}
+.fc .fc-button {
+    background: var(--primary) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    padding: 6px 12px !important;
+    text-transform: capitalize;
+    transition: all 0.2s;
+}
+.fc .fc-button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+.fc .fc-button-active {
+    background: var(--primary-dark, #6D28D9) !important;
+    box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.3) !important;
+}
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+    color: var(--text-main);
+    font-weight: 500;
+    text-decoration: none;
+}
+.fc .fc-event {
+    border-radius: 6px !important;
+    padding: 2px 6px !important;
+    font-size: 0.75rem !important;
+    border: none !important;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.fc .fc-event:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+.fc .fc-timegrid-slot {
+    height: 3em !important;
+}
+.fc .fc-now-indicator-line {
+    border-color: #EF4444 !important;
+    border-width: 2px !important;
+}
+.fc .fc-now-indicator-arrow {
+    border-color: #EF4444 !important;
+}
+.fc .fc-scrollgrid {
+    border-radius: 12px;
+    overflow: hidden;
+}
+.fc .fc-day-today {
+    background: rgba(124, 58, 237, 0.04) !important;
+}
+.fc .fc-timegrid-col.fc-day-today {
+    background: rgba(124, 58, 237, 0.03) !important;
+}
+
+/* Agenda Card */
+.agenda-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    border: 1px solid var(--border-color);
+}
+
+/* Google Calendar Status Banner */
+.gcal-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+    border: 1px solid #F59E0B;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+.gcal-status-icon {
+    font-size: 1.5rem;
+    color: #D97706;
+    flex-shrink: 0;
+}
+.gcal-status-text strong {
+    color: #92400E;
+    font-size: 0.9rem;
+}
+.gcal-status-text p {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    color: #78350F;
+}
+.gcal-status-text code {
+    background: rgba(0,0,0,0.08);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+.gcal-status-text a {
+    color: #7C3AED;
+    font-weight: 500;
+}
+.gcal-connected {
+    background: linear-gradient(135deg, #D1FAE5, #A7F3D0) !important;
+    border-color: #10B981 !important;
+}
+.gcal-connected .gcal-status-icon { color: #059669; }
+.gcal-connected .gcal-status-text strong { color: #065F46; }
+.gcal-connected .gcal-status-text p { color: #064E3B; }
+
+/* Professional Legend */
+.agenda-legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-main);
+}
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* Event Detail Panel */
+.event-detail-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    z-index: 1000;
+    width: 380px;
+    max-width: 90vw;
+    overflow: hidden;
+    animation: panelSlideIn 0.25s ease;
+}
+@keyframes panelSlideIn {
+    from { opacity: 0; transform: translate(-50%, -48%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+.event-detail-panel.hidden {
+    display: none;
+}
+.event-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--primary);
+    color: white;
+}
+.event-detail-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: white;
+    font-weight: 600;
+}
+.btn-close-sm {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-close-sm:hover {
+    background: rgba(255,255,255,0.35);
+}
+.event-detail-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.detail-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+.detail-row i {
+    color: var(--primary);
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+.event-detail-actions {
+    padding: 0 1.25rem 1.25rem;
+}
+.btn-sm {
+    font-size: 0.8rem !important;
+    padding: 8px 16px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    width: 100%;
+    justify-content: center;
+}
+
+/* Event detail backdrop */
+.event-detail-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+}
+.event-detail-backdrop.hidden {
+    display: none;
+}
+
+/* Edit Patient Button Hover */
+.edit-patient:hover,
+.open-prontuario:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+

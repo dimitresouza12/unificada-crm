@@ -136,6 +136,7 @@ function getDentistName(patient) {
 
 // Fetch data from Supabase (tabelas do SaaS)
 let allAppointments = [];
+let allProfessionals = [];
 
 async function fetchPatients() {
     try {
@@ -1461,85 +1462,220 @@ document.getElementById('formEditPatient')?.addEventListener('submit', async (e)
     }
 });
 
-// --- AGENDA (FullCalendar + Google Calendar) ---
-let allProfessionals = [];
+// --- AGENDA (FullCalendar + Google Calendar Integration) ---
 let calendarInstance = null;
+const PROF_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#EF4444'];
+let profColorMap = {}; // { calendarId: color }
 
-function renderAgenda() {
+async function renderAgenda() {
     const container = document.getElementById('calendarContainer');
     if (!container || !window.FullCalendar) return;
     
-    // Fetch professionals with Google Calendar IDs
-    fetchProfessionalsForAgenda().then(() => {
-        if (calendarInstance) {
-            calendarInstance.destroy();
-        }
-        
-        // Build Google Calendar sources from professionals
-        const googleCalendarSources = allProfessionals
-            .filter(p => p.google_calendar_id)
-            .map((p, index) => {
-                const colors = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
-                return {
-                    googleCalendarId: p.google_calendar_id,
-                    className: 'gcal-event',
-                    color: colors[index % colors.length],
-                    textColor: '#fff',
-                    extendedProps: { professionalName: p.name }
-                };
-            });
+    // Fetch professionals
+    await fetchProfessionalsForAgenda();
+    
+    // Destroy previous instance
+    if (calendarInstance) {
+        calendarInstance.destroy();
+        calendarInstance = null;
+    }
 
-        // Build events from local appointments
-        const localEvents = allAppointments.map(appt => ({
+    const hasApiKey = CONFIG.GOOGLE_API_KEY && CONFIG.GOOGLE_API_KEY.length > 10;
+    const gcalStatus = document.getElementById('gcalStatus');
+    const legendEl = document.getElementById('agendaLegend');
+    
+    // Build color map for professionals
+    const profsWithCalendar = allProfessionals.filter(p => p.google_calendar_id);
+    profColorMap = {};
+    profsWithCalendar.forEach((p, i) => {
+        profColorMap[p.google_calendar_id] = PROF_COLORS[i % PROF_COLORS.length];
+    });
+
+    // --- Show/Hide Google Calendar status ---
+    if (gcalStatus) {
+        gcalStatus.style.display = 'flex';
+        if (hasApiKey && profsWithCalendar.length > 0) {
+            gcalStatus.className = 'gcal-status gcal-connected';
+            gcalStatus.innerHTML = `
+                <div class="gcal-status-icon"><i class="ph ph-check-circle"></i></div>
+                <div class="gcal-status-text">
+                    <strong>Google Calendar Conectado</strong>
+                    <p>Sincronizando ${profsWithCalendar.length} agenda(s). Clique em um evento para ver detalhes ou editar no Google Calendar.</p>
+                </div>`;
+        } else if (!hasApiKey) {
+            gcalStatus.className = 'gcal-status';
+            gcalStatus.innerHTML = `
+                <div class="gcal-status-icon"><i class="ph ph-warning-circle"></i></div>
+                <div class="gcal-status-text">
+                    <strong>Google Calendar não configurado</strong>
+                    <p>Adicione sua <code>GOOGLE_API_KEY</code> no arquivo <code>config.js</code> para sincronizar com o Google Calendar. 
+                    <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Gerar API Key →</a></p>
+                </div>`;
+        } else {
+            gcalStatus.className = 'gcal-status';
+            gcalStatus.innerHTML = `
+                <div class="gcal-status-icon"><i class="ph ph-info"></i></div>
+                <div class="gcal-status-text">
+                    <strong>Nenhum calendário configurado</strong>
+                    <p>Adicione o <strong>Google Calendar ID</strong> nos profissionais da aba <strong>Equipe</strong> para ver suas agendas aqui.</p>
+                </div>`;
+        }
+    }
+
+    // --- Build Legend ---
+    if (legendEl) {
+        if (profsWithCalendar.length > 0) {
+            legendEl.style.display = 'flex';
+            legendEl.innerHTML = profsWithCalendar.map(p => {
+                const color = profColorMap[p.google_calendar_id];
+                return `<div class="legend-item">
+                    <span class="legend-dot" style="background: ${color};"></span>
+                    ${p.name}
+                </div>`;
+            }).join('') + `<div class="legend-item" style="margin-left: auto; color: var(--text-muted); font-weight: 400;">
+                <i class="ph ph-cursor-click" style="font-size: 1rem;"></i> Clique no evento para detalhes
+            </div>`;
+        } else {
+            legendEl.style.display = 'none';
+        }
+    }
+
+    // --- Build event sources ---
+    let eventSources = [];
+
+    // Google Calendar sources (real-time from Google)
+    if (hasApiKey) {
+        profsWithCalendar.forEach(p => {
+            eventSources.push({
+                googleCalendarId: p.google_calendar_id,
+                color: profColorMap[p.google_calendar_id],
+                textColor: '#fff',
+                className: `gcal-prof-${p.id}`,
+                extraParams: function() {
+                    return { professionalName: p.name, professionalId: p.id };
+                }
+            });
+        });
+    }
+
+    // Local appointments as fallback/supplement
+    const localEvents = allAppointments.map(appt => {
+        const profCalId = allProfessionals.find(p => p.id === appt.professional_id)?.google_calendar_id;
+        const eventColor = profCalId ? profColorMap[profCalId] : '#7C3AED';
+        const profName = allProfessionals.find(p => p.id === appt.professional_id)?.name || '';
+
+        return {
             title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
             start: appt.scheduled_at,
             end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
-            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED',
-            extendedProps: { status: appt.status, patientId: appt.patient_id }
-        }));
-
-        calendarInstance = new FullCalendar.Calendar(container, {
-            initialView: 'timeGridWeek',
-            locale: 'pt-br',
-            height: 'auto',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            buttonText: {
-                today: 'Hoje',
-                month: 'Mês',
-                week: 'Semana',
-                day: 'Dia'
-            },
-            slotMinTime: '07:00:00',
-            slotMaxTime: '21:00:00',
-            allDaySlot: false,
-            nowIndicator: true,
-            editable: false,
-            selectable: false,
-            events: localEvents,
-            eventDidMount: function(info) {
-                info.el.title = info.event.title + 
-                    (info.event.extendedProps.status ? ' (' + info.event.extendedProps.status + ')' : '') +
-                    (info.event.extendedProps.professionalName ? ' - Dra. ' + info.event.extendedProps.professionalName : '');
+            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : eventColor,
+            extendedProps: {
+                source: 'local',
+                status: appt.status,
+                patientId: appt.patient_id,
+                professionalName: profName,
+                professionalId: appt.professional_id,
+                procedureName: appt.procedure_name
             }
-        });
-
-        calendarInstance.render();
-        
-        // Populate filter
-        const filterSelect = document.getElementById('agendaProfessionalFilter');
-        if (filterSelect) {
-            filterSelect.innerHTML = '<option value="">Todas as Dentistas</option>';
-            allProfessionals.forEach(p => {
-                filterSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
-            });
-        }
+        };
     });
+
+    // Only add local events if no Google Calendar is configured
+    if (!hasApiKey || profsWithCalendar.length === 0) {
+        eventSources.push({ events: localEvents });
+    }
+
+    // --- Calendar Configuration ---
+    const calendarOptions = {
+        initialView: 'timeGridWeek',
+        locale: 'pt-br',
+        height: 'auto',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia',
+            list: 'Lista'
+        },
+        slotMinTime: '07:00:00',
+        slotMaxTime: '22:00:00',
+        allDaySlot: false,
+        nowIndicator: true,
+        navLinks: true,
+        editable: false,
+        selectable: false,
+        dayMaxEvents: 3,
+        eventSources: eventSources,
+        
+        // Event click → show detail panel
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            showEventDetail(info.event);
+        },
+
+        // Tooltip on hover
+        eventDidMount: function(info) {
+            const event = info.event;
+            const profName = event.extendedProps?.professionalName || '';
+            const status = event.extendedProps?.status || '';
+            let tooltipText = event.title;
+            if (profName) tooltipText += ` | ${profName}`;
+            if (status) tooltipText += ` (${status})`;
+            info.el.title = tooltipText;
+        },
+
+        // Loading indicator
+        loading: function(isLoading) {
+            if (isLoading) {
+                container.style.opacity = '0.6';
+            } else {
+                container.style.opacity = '1';
+            }
+        },
+
+        // Error handling for Google Calendar
+        eventSourceFailure: function(error) {
+            console.error('Erro ao carregar Google Calendar:', error);
+            if (gcalStatus) {
+                gcalStatus.className = 'gcal-status';
+                gcalStatus.style.display = 'flex';
+                gcalStatus.innerHTML = `
+                    <div class="gcal-status-icon"><i class="ph ph-x-circle"></i></div>
+                    <div class="gcal-status-text">
+                        <strong>Erro ao conectar com Google Calendar</strong>
+                        <p>Verifique se a API Key está correta e se o Google Calendar API está ativado. 
+                        Os calendários também precisam ser <strong>públicos</strong> ou compartilhados.
+                        <a href="https://support.google.com/calendar/answer/37083" target="_blank">Como tornar público →</a></p>
+                    </div>`;
+            }
+        }
+    };
+
+    // Add Google Calendar API Key if configured
+    if (hasApiKey) {
+        calendarOptions.googleCalendarApiKey = CONFIG.GOOGLE_API_KEY;
+    }
+
+    calendarInstance = new FullCalendar.Calendar(container, calendarOptions);
+    calendarInstance.render();
+
+    // --- Populate Professional Filter ---
+    const filterSelect = document.getElementById('agendaProfessionalFilter');
+    if (filterSelect) {
+        filterSelect.innerHTML = '<option value="">Todas as Dentistas</option>';
+        allProfessionals.forEach(p => {
+            const dot = profColorMap[p.google_calendar_id] || '#999';
+            filterSelect.innerHTML += `<option value="${p.id}" style="color: ${dot};">● ${p.name}</option>`;
+        });
+    }
 }
 
+// --- Fetch Professionals ---
 async function fetchProfessionalsForAgenda() {
     try {
         const { data, error } = await supabaseClient
@@ -1555,32 +1691,148 @@ async function fetchProfessionalsForAgenda() {
     }
 }
 
-// Filter agenda by professional
+// --- Show Event Detail Panel ---
+function showEventDetail(event) {
+    const panel = document.getElementById('eventDetailPanel');
+    if (!panel) return;
+
+    // Create backdrop if it doesn't exist
+    let backdrop = document.getElementById('eventDetailBackdrop');
+    if (!backdrop) {
+        backdrop = document.createElement('div');
+        backdrop.id = 'eventDetailBackdrop';
+        backdrop.className = 'event-detail-backdrop hidden';
+        document.body.appendChild(backdrop);
+        backdrop.addEventListener('click', closeEventDetail);
+    }
+
+    // Fill in details
+    const title = event.title || 'Evento';
+    const startDate = event.start;
+    const endDate = event.end;
+    const profName = event.extendedProps?.professionalName || '';
+    const description = event.extendedProps?.description || event.extendedProps?.procedureName || '';
+    const htmlLink = event.extendedProps?.htmlLink || event.url || '';
+    const status = event.extendedProps?.status || '';
+
+    document.getElementById('eventDetailTitle').textContent = title;
+
+    // Format time
+    let timeStr = '';
+    if (startDate) {
+        const opts = { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' };
+        timeStr = startDate.toLocaleDateString('pt-BR', opts);
+        if (endDate) {
+            timeStr += ' → ' + endDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+    }
+    document.getElementById('eventDetailTime').textContent = timeStr;
+    document.getElementById('eventDetailProfessional').textContent = profName || 'Não definido';
+    document.getElementById('eventDetailDesc').textContent = description || status || 'Sem descrição';
+
+    // Edit link
+    const editLink = document.getElementById('eventDetailEditLink');
+    if (htmlLink) {
+        editLink.href = htmlLink;
+        editLink.style.display = 'inline-flex';
+    } else {
+        // Build Google Calendar link for local events
+        const calendarUrl = buildGCalEditUrl(event);
+        if (calendarUrl) {
+            editLink.href = calendarUrl;
+            editLink.style.display = 'inline-flex';
+            editLink.innerHTML = '<i class="ph ph-arrow-square-out"></i> Abrir no Google Calendar';
+        } else {
+            editLink.style.display = 'none';
+        }
+    }
+
+    // Show panel + backdrop
+    backdrop.classList.remove('hidden');
+    panel.classList.remove('hidden');
+}
+
+function closeEventDetail() {
+    const panel = document.getElementById('eventDetailPanel');
+    const backdrop = document.getElementById('eventDetailBackdrop');
+    if (panel) panel.classList.add('hidden');
+    if (backdrop) backdrop.classList.add('hidden');
+}
+
+// Close button
+document.getElementById('closeEventDetail')?.addEventListener('click', closeEventDetail);
+
+// --- Build Google Calendar URL for creating/editing ---
+function buildGCalEditUrl(event) {
+    if (!event || !event.start) return '';
+    const start = event.start;
+    const end = event.end || new Date(start.getTime() + 3600000);
+    
+    const formatGCal = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const dates = `${formatGCal(start)}/${formatGCal(end)}`;
+    const title = encodeURIComponent(event.title || 'Consulta');
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dates}`;
+}
+
+// --- New Event Button → Opens Google Calendar ---
+document.getElementById('btnNovoEventoGCal')?.addEventListener('click', () => {
+    // Default to now + 1 hour
+    const now = new Date();
+    const start = new Date(now.getTime() + 3600000); // 1h from now
+    const end = new Date(start.getTime() + 3600000); // 1h duration
+    
+    const formatGCal = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const dates = `${formatGCal(start)}/${formatGCal(end)}`;
+    
+    // Try to use the first professional's calendar
+    const firstProf = allProfessionals.find(p => p.google_calendar_id);
+    let url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('Consulta - ')}&dates=${dates}`;
+    
+    if (firstProf?.google_calendar_id) {
+        url += `&src=${encodeURIComponent(firstProf.google_calendar_id)}`;
+    }
+    
+    window.open(url, '_blank');
+});
+
+// --- Filter by Professional ---
 document.getElementById('agendaProfessionalFilter')?.addEventListener('change', (e) => {
     const selectedId = e.target.value;
     if (!calendarInstance) return;
     
+    // Get all event sources
+    const sources = calendarInstance.getEventSources();
+    
     if (!selectedId) {
-        // Show all events
-        const localEvents = allAppointments.map(appt => ({
-            title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
-            start: appt.scheduled_at,
-            end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
-            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED'
-        }));
-        calendarInstance.removeAllEvents();
-        localEvents.forEach(ev => calendarInstance.addEvent(ev));
+        // Show all: re-render the agenda
+        renderAgenda();
     } else {
-        // Filter by professional_id
-        const filtered = allAppointments.filter(a => a.professional_id === selectedId);
-        const events = filtered.map(appt => ({
-            title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
-            start: appt.scheduled_at,
-            end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
-            color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED'
-        }));
-        calendarInstance.removeAllEvents();
-        events.forEach(ev => calendarInstance.addEvent(ev));
+        // Find the selected professional
+        const selectedProf = allProfessionals.find(p => p.id === selectedId);
+        if (!selectedProf) return;
+        
+        // Remove all sources, add only the selected one
+        sources.forEach(s => s.remove());
+        
+        if (CONFIG.GOOGLE_API_KEY && selectedProf.google_calendar_id) {
+            calendarInstance.addEventSource({
+                googleCalendarId: selectedProf.google_calendar_id,
+                color: profColorMap[selectedProf.google_calendar_id] || '#7C3AED',
+                textColor: '#fff'
+            });
+        } else {
+            // Fallback to local events
+            const filtered = allAppointments.filter(a => a.professional_id === selectedId);
+            const events = filtered.map(appt => ({
+                title: `${appt.patients?.name || 'Paciente'} - ${appt.procedure_name || 'Consulta'}`,
+                start: appt.scheduled_at,
+                end: new Date(new Date(appt.scheduled_at).getTime() + (appt.duration_minutes || 60) * 60000).toISOString(),
+                color: appt.status === 'Cancelado' ? '#EF4444' : appt.status === 'Concluído' ? '#10B981' : '#7C3AED',
+                extendedProps: { status: appt.status, professionalName: selectedProf.name }
+            }));
+            calendarInstance.addEventSource({ events });
+        }
     }
 });
 

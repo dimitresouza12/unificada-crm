@@ -10,6 +10,12 @@ const CONFIG = {
     N8N_SUPABASE_URL: 'https://kqwijexdskiilhfxkbvk.supabase.co',
     N8N_SUPABASE_KEY: 'sb_publishable_gYQ12En3DdbmRv7X9v9CnA_MJuN2cMT',
     
+    // Google Calendar API Key
+    // Para gerar: Google Cloud Console → APIs & Services → Credentials → Create API Key
+    // Ativar: Google Calendar API em "Enabled APIs"
+    // Restringir: apenas Google Calendar API + seu domínio
+    GOOGLE_API_KEY: '',
+    
     APP_NAME: 'My Clinica',
     VERSION: '1.0.0'
 };
