@@ -25,7 +25,8 @@ const CLINIC = {
     phone: sessionStorage.getItem('clinic_phone') || '',
     color: sessionStorage.getItem('clinic_color') || '#7C3AED',
     userRole: sessionStorage.getItem('user_role') || 'recepcao',
-    userName: sessionStorage.getItem('user_display_name') || 'Recepção'
+    userName: sessionStorage.getItem('user_display_name') || 'Recepção',
+    isSuperAdmin: sessionStorage.getItem('is_superadmin') === 'true'
 };
 
 // Verifica Autenticação
@@ -46,6 +47,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleEl = document.querySelector('.page-header h2');
     if (titleEl) titleEl.textContent = CLINIC.name;
     document.title = CLINIC.name + ' - Painel';
+
+    // Show Admin Link if user is superadmin
+    const navAdmin = document.getElementById('navAdmin');
+    if (navAdmin && CLINIC.isSuperAdmin) {
+        navAdmin.style.display = 'flex';
+    }
+
+    // Modal Nova Clínica
+    const btnNewClinic = document.getElementById('btnNewClinicAdmin');
+    const modalNewClinic = document.getElementById('modalNewClinic');
+    if (btnNewClinic && modalNewClinic) {
+        btnNewClinic.onclick = () => modalNewClinic.style.display = 'flex';
+        document.getElementById('btnCloseModalClinic').onclick = () => modalNewClinic.style.display = 'none';
+        document.getElementById('btnCancelClinic').onclick = () => modalNewClinic.style.display = 'none';
+    }
+
+    // Form Nova Clínica
+    const formNewClinic = document.getElementById('formNewClinic');
+    if (formNewClinic) {
+        formNewClinic.onsubmit = handleNewClinic;
+    }
 });
 
 // Logout
@@ -100,6 +122,10 @@ function formatPhone(phoneStr) {
     
     if (digits.length > 5) return digits;
     return '-';
+}
+
+function formatCurrency(value) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
 }
 
 // Helper function to get status badge class
@@ -233,11 +259,11 @@ function renderTable(data, shouldPopulateDentists = true) {
                 <td class="col-name" title="${patientName}" style="font-weight: 500;">${patientName}</td>
                 <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
                 <td class="col-email" title="${patientEmail}">${patientEmail}</td>
-                <td class="col-actions" style="display: flex; gap: 6px; justify-content: center;">
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;">
+                <td class="col-actions">
+                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}">
                         <i class="ph ph-file-text"></i> Prontuário
                     </button>
-                    <button class="btn-action edit-patient" data-id="${recordId}" data-name="${patientName}" data-phone="${rawPhone}" data-email="${patientEmail}" style="background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;">
+                    <button class="btn-action edit-patient" data-id="${recordId}" data-name="${patientName}" data-phone="${rawPhone}" data-email="${patientEmail}">
                         <i class="ph ph-pencil-simple"></i> Editar
                     </button>
                 </td>
@@ -1028,8 +1054,240 @@ navLinks.forEach(link => {
         if (targetView === 'viewEquipe') fetchProfessionals();
         if (targetView === 'viewAgenda') renderAgenda();
         if (targetView === 'viewConfig') loadSettings();
+        if (targetView === 'viewAdmin') fetchAdminData();
     });
 });
+
+// --- ADMIN DASHBOARD LOGIC ---
+async function fetchAdminData() {
+    if (!CLINIC.isSuperAdmin) return;
+
+    const tableBody = document.getElementById('tableBodyAdminClinics');
+    if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" class="loading-state">Carregando métricas...</td></tr>';
+
+    try {
+        // 1. Fetch all clinics
+        const { data: clinics, error: cError } = await supabaseClient
+            .from('clinics')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (cError) throw cError;
+
+        // 2. Fetch aggregate metrics
+        const { count: totalPatients } = await supabaseClient.from('patients').select('*', { count: 'exact', head: true });
+        const { count: totalAppointments } = await supabaseClient.from('appointments').select('*', { count: 'exact', head: true });
+
+        // Calculate MRR (simple sum of plan-based revenue)
+        let totalMRR = 0;
+        clinics.forEach(c => {
+            if (c.plan === 'basico') totalMRR += 199;
+            else if (c.plan === 'premium') totalMRR += 499;
+            else if (c.plan === 'enterprise') totalMRR += 999;
+        });
+
+        // Update UI
+        if (document.getElementById('adminTotalMRR')) document.getElementById('adminTotalMRR').textContent = formatCurrency(totalMRR);
+        if (document.getElementById('adminTotalClinics')) document.getElementById('adminTotalClinics').textContent = clinics.length;
+        if (document.getElementById('adminTotalPatients')) document.getElementById('adminTotalPatients').textContent = totalPatients || 0;
+        if (document.getElementById('adminTotalAppointments')) document.getElementById('adminTotalAppointments').textContent = totalAppointments || 0;
+
+        renderAdminClinics(clinics);
+        fetchAdminLogs();
+        renderAdminCharts(clinics);
+
+    } catch (err) {
+        console.error('Error fetching admin data:', err);
+        if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="loading-state" style="color:red">Erro: ${err.message}</td></tr>`;
+    }
+}
+
+async function handleNewClinic(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnSaveClinic');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Criando...';
+
+    const clinicData = {
+        name: document.getElementById('clinicName').value,
+        slug: document.getElementById('clinicSlug').value,
+        clinic_type: document.getElementById('clinicType').value,
+        plan: document.getElementById('clinicPlan').value
+    };
+
+    const userData = {
+        name: document.getElementById('adminUserName').value,
+        username: document.getElementById('adminUserLogin').value,
+        email: document.getElementById('adminUserEmail').value,
+        pass: document.getElementById('adminUserPass').value
+    };
+
+    try {
+        // 1. Criar Auth User
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email: userData.email,
+            password: userData.pass,
+            options: { data: { full_name: userData.name } }
+        });
+
+        if (authError) throw authError;
+
+        // 2. Criar Clínica
+        const { data: newClinic, error: clinicError } = await supabaseClient
+            .from('clinics')
+            .insert(clinicData)
+            .select()
+            .single();
+
+        if (clinicError) throw clinicError;
+
+        // 3. Criar Clinic User (Administrador da Clínica)
+        const { error: userError } = await supabaseClient
+            .from('clinic_users')
+            .insert({
+                clinic_id: newClinic.id,
+                user_id: authData.user.id,
+                role: 'admin',
+                display_name: userData.name,
+                username: userData.username
+            });
+
+        if (userError) throw userError;
+
+        // 4. Log de Auditoria
+        await logAudit(null, 'ADMIN', 'CLINIC_CREATED', { clinic_name: clinicData.name });
+
+        alert('Clínica e usuário administrador criados com sucesso!');
+        document.getElementById('modalNewClinic').style.display = 'none';
+        document.getElementById('formNewClinic').reset();
+        fetchAdminData();
+
+    } catch (err) {
+        console.error('Erro ao criar clínica:', err);
+        alert('Erro ao criar clínica: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Criar Clínica';
+    }
+}
+
+async function fetchAdminLogs() {
+    const tableBody = document.getElementById('tableBodyAdminLogs');
+    if (!tableBody) return;
+
+    const { data: logs } = await supabaseClient
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (!logs || logs.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="loading-state">Nenhum log encontrado.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = logs.map(log => `
+        <tr>
+            <td style="font-size: 0.75rem;">${formatDate(log.created_at)}</td>
+            <td>${log.details?.clinic_name || 'Sistema'}</td>
+            <td><strong>${log.action}</strong></td>
+        </tr>
+    `).join('');
+}
+
+let adminChart = null;
+function renderAdminCharts(clinics) {
+    const ctx = document.getElementById('adminGrowthChart');
+    if (!ctx) return;
+
+    if (adminChart) adminChart.destroy();
+
+    // Dados fictícios para demonstração de crescimento por mês
+    // Num app real, buscaríamos contagens agrupadas por mês do banco
+    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+    const clinicCount = labels.map((_, i) => clinics.length - (5 - i));
+    const mrrData = labels.map((_, i) => (clinics.length * 200) - ((5 - i) * 150));
+
+    adminChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Clínicas',
+                    data: clinicCount,
+                    borderColor: '#7C3AED',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'MRR (R$)',
+                    data: mrrData,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Clínicas' } },
+                y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Receita (R$)' } }
+            }
+        }
+    });
+}
+
+async function logAudit(clinicId, module, action, details = {}) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        await supabaseClient.from('audit_logs').insert({
+            clinic_id: clinicId,
+            user_id: user?.id,
+            module: module,
+            action: action,
+            details: details
+        });
+    } catch (err) {
+        console.warn('Audit Log failed:', err);
+    }
+}
+
+function renderAdminClinics(clinics) {
+    const tableBody = document.getElementById('tableBodyAdminClinics');
+    if (!tableBody) return;
+    
+    if (!clinics || clinics.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="loading-state">Nenhuma clínica cadastrada.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = clinics.map(c => `
+        <tr>
+            <td>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <img src="${c.logo_url || 'logo.png'}" style="width:24px; height:24px; border-radius:4px; object-fit:cover;">
+                    <strong>${c.name}</strong>
+                </div>
+            </td>
+            <td>${c.clinic_type}</td>
+            <td><span class="plan-badge plan-${c.plan}">${c.plan}</span></td>
+            <td><span class="status-badge ${c.is_active ? 'status-concluido' : 'status-cancelado'}">${c.is_active ? 'Ativo' : 'Inativo'}</span></td>
+            <td>${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
+            <td>
+                <button class="btn-action edit-patient" onclick="alert('Funcionalidade em desenvolvimento: Editar Clínica')">
+                    <i class="ph ph-pencil"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
 
 // --- DASHBOARD ---
 function renderDashboard() {
@@ -1590,6 +1848,17 @@ async function renderAgenda() {
         initialView: 'timeGridWeek',
         locale: 'pt-br',
         height: 'auto',
+        slotMinTime: '07:00:00',
+        slotMaxTime: '21:00:00',
+        allDaySlot: false,
+        nowIndicator: true,
+        slotEventOverlap: false,
+        handleWindowResize: true,
+        expandRows: true,
+        navLinks: true,
+        editable: false,
+        selectable: false,
+        dayMaxEvents: 3,
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
@@ -1602,14 +1871,6 @@ async function renderAgenda() {
             day: 'Dia',
             list: 'Lista'
         },
-        slotMinTime: '07:00:00',
-        slotMaxTime: '22:00:00',
-        allDaySlot: false,
-        nowIndicator: true,
-        navLinks: true,
-        editable: false,
-        selectable: false,
-        dayMaxEvents: 3,
         eventSources: eventSources,
         
         // Event click → show detail panel
@@ -1636,7 +1897,8 @@ async function renderAgenda() {
             } else {
                 container.style.opacity = '1';
             }
-        },
+        }
+    };
 
         // Error handling for Google Calendar
         eventSourceFailure: function(error) {
