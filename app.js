@@ -65,6 +65,7 @@ const resultsCount = document.getElementById('resultsCount');
 const searchInput = document.getElementById('searchInput');
 
 let allPatients = [];
+let allFinancials = [];
 let activeTab = 'atendimentos';
 
 // Helper function to format dates (short version: xx/xx/xx)
@@ -308,6 +309,7 @@ document.getElementById('filterDentista').addEventListener('change', applyFilter
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {
     fetchPatients();
+    fetchFinancials();
 });
 
 // Tab Switching Logic
@@ -1026,11 +1028,92 @@ function renderDashboard() {
     const totalPacientes = allPatients.length;
     const totalAgendamentos = allAppointments.length;
     
+    // Calcular Leads no Mês (Pacientes criados neste mês)
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const novosLeads = allPatients.filter(p => {
+        const d = new Date(p.created_at);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).length;
+
+    // Calcular Receita do Mês
+    const receitaMes = allFinancials.filter(f => {
+        const d = new Date(f.created_at);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    }).reduce((acc, curr) => acc + Number(curr.total_amount || 0), 0);
+
+    // Calcular Ticket Médio
+    const ticketMedio = totalPacientes > 0 ? (receitaMes / totalPacientes) : 0;
+    
     const dashPacientes = document.getElementById('dashTotalPacientes');
-    const dashAtend = document.getElementById('dashAtendimentosMes');
+    const dashAtend = document.getElementById('dashAgendamentosHoje');
+    const dashLeads = document.getElementById('dashNovosLeads');
+    const dashReceita = document.getElementById('dashReceitaMes');
+    const dashTicket = document.getElementById('dashTicketMedio');
     
     if (dashPacientes) dashPacientes.textContent = totalPacientes;
     if (dashAtend) dashAtend.textContent = totalAgendamentos;
+    if (dashLeads) dashLeads.textContent = novosLeads;
+    if (dashReceita) dashReceita.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(receitaMes);
+    if (dashTicket) dashTicket.textContent = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(ticketMedio);
+    
+    renderRevenueChart();
+}
+
+let revenueChartInstance = null;
+
+function renderRevenueChart() {
+    const ctx = document.getElementById('revenueChart');
+    if (!ctx) return;
+    
+    // Group revenue by last 7 days
+    const last7Days = [];
+    const revenueData = [];
+    
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        last7Days.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+        
+        const sumDay = allFinancials.filter(f => {
+            const fd = new Date(f.created_at);
+            return fd.getDate() === d.getDate() && fd.getMonth() === d.getMonth() && fd.getFullYear() === d.getFullYear();
+        }).reduce((acc, curr) => acc + Number(curr.total_amount || 0), 0);
+        
+        revenueData.push(sumDay);
+    }
+    
+    if (revenueChartInstance) {
+        revenueChartInstance.destroy();
+    }
+    
+    if (window.Chart) {
+        revenueChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: last7Days,
+                datasets: [{
+                    label: 'Receita Diária (R$)',
+                    data: revenueData,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
 }
 
 // --- FINANCEIRO ---
@@ -1060,15 +1143,74 @@ if (btnCancelFinanceiro) btnCancelFinanceiro.addEventListener('click', closeFinM
 
 document.getElementById('formFinanceiro')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    alert('Lançamento salvo! (Função de salvamento financeiro a ser implementada com tabela financial)');
-    closeFinModal();
+    const pacienteId = document.getElementById('finPaciente').value;
+    const valor = document.getElementById('finValor').value;
+    const metodo = document.getElementById('finMetodo').value;
+    const descricao = document.getElementById('finDescricao').value;
+
+    try {
+        const { error } = await supabaseClient
+            .from('financial_records')
+            .insert([{
+                clinic_id: CLINIC.id,
+                patient_id: pacienteId,
+                total_amount: valor,
+                payment_method: metodo,
+                notes: descricao
+            }]);
+            
+        if (error) throw error;
+        alert('Lançamento salvo com sucesso!');
+        closeFinModal();
+        fetchFinancials();
+    } catch (error) {
+        console.error('Erro ao salvar financeiro:', error);
+        alert('Erro ao salvar lançamento: ' + error.message);
+    }
 });
 
-function fetchFinancials() {
-    // Mock temporário para renderizar a tabela
-    const tbody = document.getElementById('tableBodyFinanceiro');
-    if (tbody && tbody.innerHTML.trim() === '') {
-        tbody.innerHTML = '<tr><td colspan="5">Nenhum lançamento encontrado.</td></tr>';
+async function fetchFinancials() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('financial_records')
+            .select('*, patients(name)')
+            .order('created_at', { ascending: false });
+            
+        if (error) throw error;
+        
+        allFinancials = data || [];
+        
+        const tbody = document.getElementById('tableBodyFinanceiro');
+        if (!tbody) return;
+        
+        if (allFinancials.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="loading-state">Nenhum lançamento encontrado.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = allFinancials.map(f => {
+            const dataStr = new Date(f.created_at).toLocaleDateString('pt-BR');
+            const pacienteName = f.patients ? f.patients.name : 'Avulso';
+            const desc = f.notes || '---';
+            const valor = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(f.total_amount);
+            const status = '<span class="status-badge status-concluido">Recebido</span>';
+            
+            return `
+            <tr>
+                <td style="font-weight: 500;">${dataStr}</td>
+                <td>${pacienteName}</td>
+                <td>${desc}</td>
+                <td style="color: var(--success-color); font-weight: 600;">${valor}</td>
+                <td>${f.payment_method}</td>
+                <td>${status}</td>
+            </tr>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Erro ao buscar financeiro:', error);
+        const tbody = document.getElementById('tableBodyFinanceiro');
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Erro ao carregar finanças</td></tr>`;
     }
 }
 

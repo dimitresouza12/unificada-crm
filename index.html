@@ -145,8 +145,23 @@
                         <p id="dashAgendamentosHoje" class="metric-value">0</p>
                     </div>
                     <div class="metric-card">
+                        <h3>Novos Leads (Mês)</h3>
+                        <p id="dashNovosLeads" class="metric-value">0</p>
+                    </div>
+                    <div class="metric-card">
                         <h3>Receita do Mês</h3>
-                        <p id="dashReceitaMes" class="metric-value">R$ 0,00</p>
+                        <p id="dashReceitaMes" class="metric-value" style="color: var(--success-color);">R$ 0,00</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Ticket Médio</h3>
+                        <p id="dashTicketMedio" class="metric-value">R$ 0,00</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-charts" style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
+                    <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--text-main);">Receita e Movimentação</h3>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="revenueChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -167,10 +182,10 @@
                             <tr>
                                 <th>Data</th>
                                 <th>Paciente</th>
-                                <th>Valor Total</th>
-                                <th>Desconto</th>
-                                <th>Método Pagamento</th>
-                                <th>Ações</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Pagamento</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody id="tableBodyFinanceiro">
@@ -462,6 +477,10 @@
                         <input type="number" id="finValor" step="0.01" required>
                     </div>
                     <div class="form-group">
+                        <label>Descrição / Procedimento</label>
+                        <input type="text" id="finDescricao" placeholder="Ex: Avaliação Inicial ou Pagamento Parcial" required>
+                    </div>
+                    <div class="form-group">
                         <label>Método de Pagamento</label>
                         <select id="finMetodo" required>
                             <option value="PIX">PIX</option>
@@ -511,6 +530,8 @@
 
     <!-- Supabase JS via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Excel Export (SheetJS) -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- SaaS Config -->
