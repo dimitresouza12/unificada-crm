@@ -260,12 +260,14 @@ function renderTable(data, shouldPopulateDentists = true) {
                 <td class="col-phone" title="${cleanPhone}">${cleanPhone}</td>
                 <td class="col-email" title="${patientEmail}">${patientEmail}</td>
                 <td class="col-actions">
-                    <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}">
-                        <i class="ph ph-file-text"></i> Prontuário
-                    </button>
-                    <button class="btn-action edit-patient" data-id="${recordId}" data-name="${patientName}" data-phone="${rawPhone}" data-email="${patientEmail}">
-                        <i class="ph ph-pencil-simple"></i> Editar
-                    </button>
+                    <div class="actions-wrapper">
+                        <button class="btn-action open-prontuario" data-id="${recordId}" data-name="${patientName}" data-phone="${cleanPhone}">
+                            <i class="ph ph-file-text"></i> Prontuário
+                        </button>
+                        <button class="btn-action edit-patient" data-id="${recordId}" data-name="${patientName}" data-phone="${rawPhone}" data-email="${patientEmail}">
+                            <i class="ph ph-pencil-simple"></i> Editar
+                        </button>
+                    </div>
                 </td>
             </tr>
             `;
@@ -1059,6 +1061,88 @@ navLinks.forEach(link => {
 });
 
 // --- ADMIN DASHBOARD LOGIC ---
+async function fetchSuperAdmins() {
+    const tableBody = document.getElementById('tableBodyAdminSuperUsers');
+    if (!tableBody) return;
+
+    try {
+        const { data: users, error } = await supabaseClient
+            .from('clinic_users')
+            .select('*')
+            .eq('is_superadmin', true);
+
+        if (error) throw error;
+
+        if (users.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="4" class="loading-state">Nenhum super admin cadastrado.</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = users.map(user => `
+            <tr>
+                <td>${user.display_name}</td>
+                <td>@${user.username}</td>
+                <td>${user.email || '-'}</td>
+                <td class="col-actions">
+                    <button class="btn-action" style="background:#EF4444" onclick="revokeSuperAdmin('${user.id}')">
+                        <i class="ph ph-shield-slash"></i> Revogar
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (err) {
+        console.error('Error fetching super admins:', err);
+        tableBody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:red">Erro: ${err.message}</td></tr>`;
+    }
+}
+
+async function revokeSuperAdmin(userId) {
+    if (!confirm('Tem certeza que deseja revogar o acesso de Super Admin deste usuário?')) return;
+
+    try {
+        const { error } = await supabaseClient
+            .from('clinic_users')
+            .update({ is_superadmin: false })
+            .eq('id', userId);
+
+        if (error) throw error;
+        showToast('Acesso revogado com sucesso!');
+        fetchSuperAdmins();
+    } catch (err) {
+        alert('Erro ao revogar acesso: ' + err.message);
+    }
+}
+async function showPromoteAdminModal() {
+    const username = prompt('Digite o @username do usuário que deseja promover a Super Admin:');
+    if (!username) return;
+
+    const cleanUsername = username.replace('@', '').trim();
+
+    try {
+        const { data: user, error: fetchError } = await supabaseClient
+            .from('clinic_users')
+            .select('id, display_name')
+            .eq('username', cleanUsername)
+            .single();
+
+        if (fetchError || !user) throw new Error('Usuário não encontrado.');
+
+        if (!confirm(`Deseja promover "${user.display_name}" (@${cleanUsername}) a Super Admin?`)) return;
+
+        const { error: updateError } = await supabaseClient
+            .from('clinic_users')
+            .update({ is_superadmin: true })
+            .eq('id', user.id);
+
+        if (updateError) throw updateError;
+
+        showToast('Usuário promovido com sucesso!');
+        fetchSuperAdmins();
+    } catch (err) {
+        alert('Erro: ' + err.message);
+    }
+}
 async function fetchAdminData() {
     if (!CLINIC.isSuperAdmin) return;
 
@@ -1094,6 +1178,7 @@ async function fetchAdminData() {
 
         renderAdminClinics(clinics);
         fetchAdminLogs();
+        fetchSuperAdmins(); // New function
         renderAdminCharts(clinics);
 
     } catch (err) {
@@ -1149,7 +1234,8 @@ async function handleNewClinic(e) {
                 user_id: authData.user.id,
                 role: 'admin',
                 display_name: userData.name,
-                username: userData.username
+                username: userData.username,
+                email: userData.email
             });
 
         if (userError) throw userError;

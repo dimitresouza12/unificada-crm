@@ -37,6 +37,7 @@ async function loadClinicData(userId) {
             sessionStorage.setItem('clinic_color', clinicUser.clinics.primary_color || '#7C3AED');
             sessionStorage.setItem('user_role', clinicUser.role);
             sessionStorage.setItem('user_display_name', clinicUser.display_name);
+            sessionStorage.setItem('is_superadmin', clinicUser.is_superadmin || false);
         }
     } catch (err) {
         console.error('Erro ao carregar dados da clínica:', err);
@@ -58,24 +59,20 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     try {
         let email = usernameOrEmail;
 
-        // Se não parece um email, buscar o email real na tabela clinic_users
+        // Se não parece um email (não tem @), buscar o email real na tabela clinic_users
         if (!usernameOrEmail.includes('@')) {
             const { data: userData, error: lookupError } = await supabaseClient
                 .from('clinic_users')
-                .select('user_id, clinics(email)')
+                .select('email')
                 .eq('username', usernameOrEmail.toLowerCase())
                 .eq('is_active', true)
                 .single();
 
-            if (lookupError || !userData) {
-                throw new Error('Usuário não encontrado.');
+            if (lookupError || !userData || !userData.email) {
+                throw new Error('Usuário não encontrado ou sem email vinculado.');
             }
 
-            // Buscar email do auth user via a clínica
-            email = userData.clinics?.email;
-            if (!email) {
-                throw new Error('Email da clínica não configurado.');
-            }
+            email = userData.email;
         }
 
         // Autenticar com Supabase Auth
