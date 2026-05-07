@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Patient, MedicalRecord, RecordEntry } from '@/types'
+import type { AuthClinic } from '@/types'
 import { TabFicha } from './TabFicha'
 import { TabOdontograma } from './TabOdontograma'
 import { TabTimeline } from './TabTimeline'
@@ -12,12 +13,13 @@ type Tab = 'ficha' | 'odontograma' | 'timeline' | 'chat'
 
 interface Props {
   patient: Patient
-  clinicId: string
-  clinicName: string
+  clinic: AuthClinic
   onClose: () => void
 }
 
-export function ProntuarioModal({ patient, clinicId, clinicName, onClose }: Props) {
+export function ProntuarioModal({ patient, clinic, onClose }: Props) {
+  const clinicId = clinic.id
+  const clinicName = clinic.name
   const [tab, setTab] = useState<Tab>('ficha')
   const [record, setRecord] = useState<MedicalRecord | null>(null)
   const [entries, setEntries] = useState<RecordEntry[]>([])
@@ -77,6 +79,8 @@ export function ProntuarioModal({ patient, clinicId, clinicName, onClose }: Prop
                 <TabFicha
                   patient={patient}
                   record={record}
+                  entries={entries}
+                  clinic={clinic}
                   clinicId={clinicId}
                   clinicName={clinicName}
                   onSaved={loadRecord}

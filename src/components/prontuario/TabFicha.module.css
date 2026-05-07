@@ -98,3 +98,16 @@
 }
 .btnSave:hover:not(:disabled) { opacity: 0.88; }
 .btnSave:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.btnPrint {
+  padding: 0.5rem 1rem;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btnPrint:hover { background: var(--bg-secondary); border-color: var(--brand-primary); color: var(--brand-primary); }

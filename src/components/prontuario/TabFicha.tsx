@@ -1,12 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import type { Patient, MedicalRecord } from '@/types'
+import type { Patient, MedicalRecord, RecordEntry } from '@/types'
+import type { AuthClinic } from '@/types'
+import { printProntuario, printContrato } from '@/lib/print'
 import styles from './TabFicha.module.css'
 
 interface Props {
   patient: Patient
   record: MedicalRecord | null
+  entries: RecordEntry[]
+  clinic: AuthClinic
   clinicId: string
   clinicName: string
   onSaved: () => void
@@ -24,7 +28,7 @@ CLÁUSULA 3ª: Em caso de desistência, o CONTRATANTE deverá comunicar com ante
 Assinatura: __________________________________
 Data: ${new Date().toLocaleDateString('pt-BR')}`
 
-export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Props) {
+export function TabFicha({ patient, record, entries, clinic, clinicId, clinicName, onSaved }: Props) {
   const [anamnesis, setAnamnesis] = useState<Record<string, string>>({})
   const [clinicalExam, setClinicalExam] = useState<Record<string, string>>({})
   const [treatmentPlan, setTreatmentPlan] = useState('')
@@ -41,14 +45,13 @@ export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Pro
     } else {
       setContractText(CONTRACT_TEMPLATE(clinicName, patient.name))
     }
-  }, [record])
+  }, [record, clinicName, patient.name])
 
   function setA(k: string, v: string) { setAnamnesis((p) => ({ ...p, [k]: v })) }
   function setE(k: string, v: string) { setClinicalExam((p) => ({ ...p, [k]: v })) }
 
   async function handleSave() {
     setSaving(true)
-    // supabase singleton
     try {
       const payload = {
         clinic_id: clinicId,
@@ -70,6 +73,21 @@ export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Pro
     } finally {
       setSaving(false)
     }
+  }
+
+  const clinicInfo = {
+    name: clinic.name,
+    logo: clinic.logo || undefined,
+    address: clinic.address || undefined,
+    phone: clinic.phone || undefined,
+  }
+
+  const recordForPrint: MedicalRecord = {
+    ...(record ?? {} as MedicalRecord),
+    anamnesis,
+    clinical_exam: clinicalExam,
+    treatment_plan: treatmentPlan,
+    contract_text: contractText,
   }
 
   const aField = (k: string, label: string) => (
@@ -140,7 +158,16 @@ export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Pro
       </section>
 
       <section className={styles.section}>
-        <h3 className={styles.sectionTitle}>Contrato</h3>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 className={styles.sectionTitle} style={{ border: 'none', marginBottom: 0 }}>Contrato</h3>
+          <button
+            className={styles.btnPrint}
+            onClick={() => printContrato(clinicInfo, patient, contractText)}
+            type="button"
+          >
+            🖨️ Imprimir Contrato
+          </button>
+        </div>
         <textarea
           className={styles.bigArea}
           rows={10}
@@ -151,6 +178,13 @@ export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Pro
 
       <div className={styles.saveRow}>
         {saved && <span className={styles.savedMsg}>✓ Salvo com sucesso!</span>}
+        <button
+          className={styles.btnPrint}
+          onClick={() => printProntuario(clinicInfo, patient, recordForPrint, entries)}
+          type="button"
+        >
+          🖨️ Imprimir Prontuário
+        </button>
         <button className={styles.btnSave} onClick={handleSave} disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar Ficha'}
         </button>

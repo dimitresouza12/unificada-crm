@@ -1,10 +1,17 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone } from '@/lib/utils'
 import type { Appointment, Patient, Professional } from '@/types'
+import { statusColor, type CalendarEvent } from '@/components/agenda/FullCalendarWrapper'
 import styles from './agenda.module.css'
+
+const FullCalendarWrapper = dynamic(
+  () => import('@/components/agenda/FullCalendarWrapper'),
+  { ssr: false, loading: () => <div className={styles.calLoading}>Carregando calendário...</div> }
+)
 
 interface NewAppt {
   patient_id: string
@@ -21,12 +28,15 @@ const BLANK: NewAppt = {
   scheduled_at: '', duration_minutes: 60, status: 'agendado', notes: '',
 }
 
+type ViewMode = 'calendar' | 'lista'
+
 export default function AgendaPage() {
   const { clinic } = useAuthStore()
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
   const [professionals, setProfessionals] = useState<Professional[]>([])
   const [loading, setLoading] = useState(true)
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar')
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<NewAppt>(BLANK)
   const [saving, setSaving] = useState(false)
@@ -34,13 +44,8 @@ export default function AgendaPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [selected, setSelected] = useState<Appointment | null>(null)
 
-  useEffect(() => {
-    if (clinic) loadData()
-  }, [clinic])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     if (!clinic) return
-    // supabase singleton
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
         .from('appointments')
@@ -54,7 +59,26 @@ export default function AgendaPage() {
     setPatients((patRes.data ?? []) as Patient[])
     setProfessionals((profRes.data ?? []) as Professional[])
     setLoading(false)
-  }
+  }, [clinic])
+
+  useEffect(() => { if (clinic) loadData() }, [clinic, loadData])
+
+  const calendarEvents = useMemo<CalendarEvent[]>(() =>
+    appointments.map((a) => {
+      const start = a.scheduled_at
+      const end = start
+        ? new Date(new Date(start).getTime() + (a.duration_minutes ?? 60) * 60000).toISOString()
+        : undefined
+      return {
+        id: a.id,
+        title: `${a.patients?.name ?? 'Paciente'} — ${a.procedure_name ?? 'Consulta'}`,
+        start,
+        end,
+        color: statusColor(a.status ?? ''),
+        extendedProps: { appt: a },
+      }
+    }),
+  [appointments])
 
   const filtered = appointments.filter((a) => {
     const matchStatus = !filterStatus || a.status === filterStatus
@@ -62,10 +86,19 @@ export default function AgendaPage() {
     return matchStatus && matchDate
   })
 
+  function handleEventClick(id: string) {
+    const appt = appointments.find((a) => a.id === id)
+    if (appt) setSelected(appt)
+  }
+
+  function handleDateSelect(dateStr: string) {
+    setForm({ ...BLANK, scheduled_at: dateStr.length <= 10 ? dateStr + 'T09:00' : dateStr })
+    setShowModal(true)
+  }
+
   async function handleSave() {
     if (!clinic || !form.patient_id || !form.scheduled_at) return
     setSaving(true)
-    // supabase singleton
     await supabase.from('appointments').insert([{ ...form, clinic_id: clinic.id }])
     setSaving(false)
     setShowModal(false)
@@ -74,7 +107,6 @@ export default function AgendaPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    // supabase singleton
     await supabase.from('appointments').update({ status }).eq('id', id)
     loadData()
     setSelected(null)
@@ -93,37 +125,64 @@ export default function AgendaPage() {
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Agenda</h1>
-          <p className={styles.sub}>{filtered.length} agendamentos</p>
+          <p className={styles.sub}>{appointments.length} agendamentos</p>
         </div>
-        <button className={styles.btnPrimary} onClick={() => setShowModal(true)}>
-          + Novo Agendamento
-        </button>
+        <div className={styles.headerActions}>
+          <div className={styles.viewToggle}>
+            <button
+              className={`${styles.toggleBtn} ${viewMode === 'calendar' ? styles.toggleActive : ''}`}
+              onClick={() => setViewMode('calendar')}
+            >
+              📅 Calendário
+            </button>
+            <button
+              className={`${styles.toggleBtn} ${viewMode === 'lista' ? styles.toggleActive : ''}`}
+              onClick={() => setViewMode('lista')}
+            >
+              ☰ Lista
+            </button>
+          </div>
+          <button className={styles.btnPrimary} onClick={() => setShowModal(true)}>
+            + Novo Agendamento
+          </button>
+        </div>
       </div>
 
-      <div className={styles.filters}>
-        <input
-          type="date"
-          className={styles.input}
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-        />
-        <select className={styles.input} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">Todos os status</option>
-          <option value="agendado">Agendado</option>
-          <option value="confirmado">Confirmado</option>
-          <option value="concluido">Concluído</option>
-          <option value="cancelado">Cancelado</option>
-          <option value="faltou">Faltou</option>
-        </select>
-        {(filterDate || filterStatus) && (
-          <button className={styles.btnClear} onClick={() => { setFilterDate(''); setFilterStatus('') }}>
-            Limpar
-          </button>
-        )}
-      </div>
+      {viewMode === 'lista' && (
+        <div className={styles.filters}>
+          <input
+            type="date"
+            className={styles.input}
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+          />
+          <select className={styles.input} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <option value="">Todos os status</option>
+            <option value="agendado">Agendado</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="concluido">Concluído</option>
+            <option value="cancelado">Cancelado</option>
+            <option value="faltou">Faltou</option>
+          </select>
+          {(filterDate || filterStatus) && (
+            <button className={styles.btnClear} onClick={() => { setFilterDate(''); setFilterStatus('') }}>
+              Limpar
+            </button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <p className={styles.loading}>Carregando...</p>
+      ) : viewMode === 'calendar' ? (
+        <div className={styles.calendarWrap}>
+          <FullCalendarWrapper
+            events={calendarEvents}
+            onEventClick={handleEventClick}
+            onDateSelect={handleDateSelect}
+          />
+          <p className={styles.calHint}>Clique em um evento para ver detalhes. Selecione uma data para criar agendamento.</p>
+        </div>
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -150,7 +209,7 @@ export default function AgendaPage() {
                   <td>{formatDate(a.scheduled_at)}</td>
                   <td><span className={`status-badge status-${a.status ?? 'pendente'}`}>{a.status ?? 'pendente'}</span></td>
                   <td onClick={(e) => e.stopPropagation()}>
-                    <button className={styles.btnGcal} onClick={() => openGCal(a)} title="Abrir no Google Calendar">
+                    <button className={styles.btnGcal} onClick={() => openGCal(a)} title="Adicionar ao Google Calendar">
                       📅 GCal
                     </button>
                   </td>
@@ -172,7 +231,7 @@ export default function AgendaPage() {
             <div className={styles.detailBody}>
               <Row label="Procedimento" value={selected.procedure_name ?? '-'} />
               <Row label="Data" value={formatDate(selected.scheduled_at)} />
-              <Row label="Duração" value={`${selected.duration_minutes} min`} />
+              <Row label="Duração" value={`${selected.duration_minutes ?? 60} min`} />
               <Row label="Telefone" value={formatPhone(selected.patients?.phone)} />
               <Row label="Status atual" value={selected.status ?? '-'} />
               {selected.notes && <Row label="Observações" value={selected.notes} />}
@@ -191,7 +250,7 @@ export default function AgendaPage() {
                 ))}
               </div>
               <button className={styles.btnGcalLarge} onClick={() => openGCal(selected)}>
-                📅 Abrir no Google Calendar
+                📅 Adicionar ao Google Calendar
               </button>
             </div>
           </div>

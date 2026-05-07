@@ -209,8 +209,7 @@ export default function PacientesPage() {
       {prontuarioPatient && (
         <ProntuarioModal
           patient={prontuarioPatient}
-          clinicId={clinic!.id}
-          clinicName={clinic!.name}
+          clinic={clinic!}
           onClose={() => setProntuarioPatient(null)}
         />
       )}
