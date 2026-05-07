@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Clinica - Painel</title>
+    <!-- Anti-Cache Meta Tags -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="theme-color" content="#7C3AED">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="style.css?v=15">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="topbar">
+            <div class="logo">
+                <img src="logo.png" alt="Clínica Unificada Logo" class="brand-logo">
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="nav-item active" data-view="viewPacientes">Pacientes e Leads</a>
+                <a href="#" class="nav-item" data-view="viewAgenda">Agenda</a>
+                <a href="#" class="nav-item" data-view="viewDashboard">Dashboard</a>
+                <a href="#" class="nav-item" data-view="viewFinanceiro">Financeiro</a>
+                <a href="#" class="nav-item" data-view="viewEquipe">Equipe</a>
+                <a href="#" class="nav-item" data-view="viewConfig">Configurações</a>
+                <a href="#" class="nav-item" data-view="viewAdmin" id="navAdmin" style="display: none;"><i
+                        class="ph ph-shield-checkered"></i> Admin</a>
+            </nav>
+            <div class="user-profile">
+                <div class="avatar" style="display: flex; align-items: center; justify-content: center;"><i
+                        class="ph ph-user" style="font-size: 1.2rem;"></i></div>
+                <div class="user-info">
+                    <span class="name">Recepção</span>
+                    <button id="btnLogout"
+                        style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.8rem; text-align:left; text-decoration:underline;">Sair
+                        do Sistema</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- VIEW PACIENTES E LEADS (Original) -->
+            <div id="viewPacientes" class="view-section active">
+                <div class="page-header">
+                    <h2>Gestão da Clínica</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="btnNovoAgendamento">
+                            <i class="ph ph-plus"></i> Novo Agendamento
+                        </button>
+                        <button class="btn btn-secondary" id="btnExportar">
+                            <i class="ph ph-export"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="tabs-navigation">
+                    <button class="tab-btn active" id="tabAtendimentos" data-target="tabAtendimentos">Atendimentos
+                        (Leads)</button>
+                    <button class="tab-btn" id="tabPacientes" data-target="tabPacientes">Ficha de Pacientes</button>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-card">
+                    <div class="table-header" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <div class="search-bar" style="flex: 1; min-width: 250px;">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="searchInput" placeholder="Buscar paciente...">
+                        </div>
+                        <div class="filters-group" style="display: flex; gap: 0.75rem;">
+                            <select id="filterStatus" class="btn btn-secondary" style="padding: 0.5rem; height: auto;">
+                                <option value="">Todos Status</option>
+                                <option value="Agendado">Agendado</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Confirmado">Confirmado</option>
+                                <option value="Concluído">Concluído</option>
+                                <option value="Cancelado">Cancelado</option>
+                            </select>
+                            <select id="filterDentista" class="btn btn-secondary"
+                                style="padding: 0.5rem; height: auto;">
+                                <option value="">Todas Dentistas</option>
+                                <!-- Dinâmico -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ABA ATENDIMENTOS -->
+                    <div class="table-container tab-content active" id="contentAtendimentos">
+                        <table id="tableAtendimentos">
+                            <thead>
+                                <tr>
+                                    <th class="col-name">Paciente</th>
+                                    <th class="col-phone">Telefone</th>
+                                    <th class="col-proc">Procedimento</th>
+                                    <th class="col-dentist">Dentista</th>
+                                    <th class="col-status">Status</th>
+                                    <th class="col-date">Data Conversa</th>
+                                    <th class="col-date">Data Agendamento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyAtendimentos">
+                                <tr>
+                                    <td colspan="7" class="loading-state">Carregando dados...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ABA PACIENTES -->
+                    <div class="table-container tab-content hidden" id="contentPacientes">
+                        <table id="tablePacientes">
+                            <thead>
+                                <tr>
+                                    <th class="col-name">Paciente</th>
+                                    <th class="col-phone">Telefone</th>
+                                    <th class="col-email">Email</th>
+                                    <th class="col-actions">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyPacientes">
+                                <tr>
+                                    <td colspan="3" class="loading-state">Carregando pacientes...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-footer">
+                        <span class="results-count" id="resultsCount">Mostrando 0 resultados</span>
+                    </div>
+                </div>
+            </div> <!-- Fim View Pacientes -->
+
+            <!-- VIEW AGENDA -->
+            <div id="viewAgenda" class="view-section">
+                <div class="page-header">
+                    <h2><i class="ph ph-calendar-dots" style="margin-right: 8px;"></i>Agenda Integrada</h2>
+                    <div class="header-actions" style="display: flex; gap: 0.75rem; align-items: center;">
+                        <select id="agendaProfessionalFilter" class="btn btn-secondary"
+                            style="padding: 0.5rem 1rem; height: auto; min-width: 180px;">
+                            <option value="">Todas as Dentistas</option>
+                        </select>
+                        <button class="btn btn-primary" id="btnNovoEventoGCal"
+                            title="Criar novo evento no Google Calendar">
+                            <i class="ph ph-plus"></i> Novo Evento
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Calendar Status -->
+                <div id="gcalStatus" class="gcal-status" style="display: none;">
+                    <div class="gcal-status-icon"><i class="ph ph-warning-circle"></i></div>
+                    <div class="gcal-status-text">
+                        <strong>Google Calendar não configurado</strong>
+                        <p>Adicione sua <code>GOOGLE_API_KEY</code> no arquivo <code>config.js</code> para sincronizar
+                            com o Google Calendar.
+                            <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Gerar API Key
+                                →</a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Professional Legend -->
+                <div id="agendaLegend" class="agenda-legend" style="display: none;"></div>
+
+                <!-- Calendar Container -->
+                <div class="agenda-card">
+                    <div id="calendarContainer" style="min-height: 650px;"></div>
+                </div>
+
+                <!-- Event Detail Panel (appears on click) -->
+                <div id="eventDetailPanel" class="event-detail-panel hidden">
+                    <div class="event-detail-header">
+                        <h4 id="eventDetailTitle">Detalhes do Evento</h4>
+                        <button id="closeEventDetail" class="btn-close-sm"><i class="ph ph-x"></i></button>
+                    </div>
+                    <div class="event-detail-body">
+                        <div class="detail-row"><i class="ph ph-clock"></i> <span id="eventDetailTime"></span></div>
+                        <div class="detail-row"><i class="ph ph-user"></i> <span id="eventDetailProfessional"></span>
+                        </div>
+                        <div class="detail-row"><i class="ph ph-note"></i> <span id="eventDetailDesc"></span></div>
+                    </div>
+                    <div class="event-detail-actions">
+                        <a id="eventDetailEditLink" href="#" target="_blank" class="btn btn-primary btn-sm">
+                            <i class="ph ph-pencil-simple"></i> Editar no Google Calendar
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW DASHBOARD -->
+            <div id="viewDashboard" class="view-section">
+                <div class="page-header">
+                    <h2>Dashboard</h2>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="metric-card">
+                        <h3>Total de Pacientes</h3>
+                        <p id="dashTotalPacientes" class="metric-value">0</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Agendamentos (Hoje)</h3>
+                        <p id="dashAgendamentosHoje" class="metric-value">0</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Novos Leads (Mês)</h3>
+                        <p id="dashNovosLeads" class="metric-value">0</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Receita do Mês</h3>
+                        <p id="dashReceitaMes" class="metric-value" style="color: var(--success-color);">R$ 0,00</p>
+                    </div>
+                    <div class="metric-card">
+                        <h3>Ticket Médio</h3>
+                        <p id="dashTicketMedio" class="metric-value">R$ 0,00</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-charts"
+                    style="margin-top: 2rem; background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border-color);">
+                    <h3 style="margin-top: 0; margin-bottom: 1.5rem; color: var(--text-main);">Receita e Movimentação
+                    </h3>
+                    <div style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW FINANCEIRO -->
+            <div id="viewFinanceiro" class="view-section">
+                <div class="page-header">
+                    <h2>Gestão Financeira</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="btnNovoLancamento">
+                            <i class="ph ph-plus"></i> Novo Lançamento
+                        </button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <table id="tableFinanceiro">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Paciente</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Pagamento</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyFinanceiro">
+                            <tr>
+                                <td colspan="6" class="loading-state">Carregando dados...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW EQUIPE -->
+            <div id="viewEquipe" class="view-section">
+                <div class="page-header">
+                    <h2>Equipe Clínica</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-primary" id="btnNovoProfissional">
+                            <i class="ph ph-plus"></i> Adicionar Profissional
+                        </button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <table id="tableEquipe">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Especialidade</th>
+                                <th>Google Calendar ID</th>
+                                <th>Data Cadastro</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBodyEquipe">
+                            <tr>
+                                <td colspan="4" class="loading-state">Carregando profissionais...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW CONFIGURAÇÕES -->
+            <div id="viewConfig" class="view-section">
+                <div class="page-header">
+                    <h2>Configurações</h2>
+                </div>
+                <div class="config-card"
+                    style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <form id="formConfig">
+                        <div class="input-group">
+                            <label>Nome da Clínica</label>
+                            <input type="text" id="configNomeClinica" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Telefone / WhatsApp</label>
+                            <input type="text" id="configTelefone">
+                        </div>
+                        <div class="input-group">
+                            <label>Endereço</label>
+                            <input type="text" id="configEndereco">
+                        </div>
+                        <div class="input-group">
+                            <label>URL do Logo</label>
+                            <input type="text" id="configLogo">
+                        </div>
+                        <div class="input-group" style="grid-column: span 2;">
+                            <label>Texto Padrão do Contrato</label>
+                            <textarea id="configContrato" rows="6"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">Salvar
+                            Configurações</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW ADMIN (SaaS Dashboard) -->
+            <div id="viewAdmin" class="view-section">
+                <div class="page-header">
+                    <div>
+                        <h2><i class="ph ph-shield-check" style="margin-right: 8px;"></i>Painel Administrativo SaaS</h2>
+                        <p class="text-muted">Gerencie inquilinos, usuários e monitoramento do sistema.</p>
+                    </div>
+                </div>
+
+                <div class="admin-layout"
+                    style="display: flex; gap: 2rem; align-items: flex-start; margin-top: 1.5rem;">
+                    <!-- Admin Lateral Sidebar -->
+                    <div class="admin-sidebar"
+                        style="width: 250px; flex-shrink: 0; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; position: sticky; top: 90px;">
+                        <div class="admin-tabs" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button class="admin-tab-btn active" data-admin-tab="adminClinicas"
+                                style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-buildings"></i> Clínicas
+                            </button>
+                            <button class="admin-tab-btn" data-admin-tab="adminUsuarios"
+                                style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-users-three"></i> Usuários Globais
+                            </button>
+                            <button class="admin-tab-btn" data-admin-tab="adminLogs"
+                                style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-scroll"></i> Logs do Sistema
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Admin Content Area -->
+                    <div class="admin-main-content" style="flex: 1; min-width: 0;">
+
+                        <div id="adminClinicas" class="admin-tab-content active">
+                            <div class="admin-actions-bar">
+                                <div class="search-box">
+                                    <i class="ph ph-magnifying-glass"></i>
+                                    <input type="text" id="searchAdminClinicas"
+                                        placeholder="Buscar clínica por nome ou ID...">
+                                </div>
+                                <button class="btn btn-primary" onclick="openModal('modalNewClinic')">
+                                    <i class="ph ph-plus"></i> Nova Clínica
+                                </button>
+                            </div>
+
+                            <div class="admin-stats-grid">
+                                <div class="admin-stat-card">
+                                    <span class="stat-label">Total de Clínicas</span>
+                                    <span id="adminTotalClinicsStat" class="stat-value">0</span>
+                                </div>
+                                <div class="admin-stat-card">
+                                    <span class="stat-label">Ativas</span>
+                                    <span id="adminClinicasAtivas" class="stat-value">0</span>
+                                </div>
+                                <div class="admin-stat-card">
+                                    <span class="stat-label">Pacientes Totais</span>
+                                    <span id="adminTotalPatientsStat" class="stat-value">0</span>
+                                </div>
+                            </div>
+
+                            <div class="table-card">
+                                <table id="tableAdminClinicas">
+                                    <thead>
+                                        <tr>
+                                            <th>Clínica</th>
+                                            <th>Tipo</th>
+                                            <th>Plano</th>
+                                            <th>Status</th>
+                                            <th>Data Cadastro</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBodyAdminClinicas">
+                                        <tr>
+                                            <td colspan="6" class="loading-state">Carregando clínicas...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="adminUsuarios" class="admin-tab-content hidden">
+                            <div class="admin-actions-bar">
+                                <div class="search-box">
+                                    <i class="ph ph-magnifying-glass"></i>
+                                    <input type="text" id="searchAdminUsers" placeholder="Buscar usuário por e-mail...">
+                                </div>
+                            </div>
+                            <div class="table-card">
+                                <table id="tableAdminUsers">
+                                    <thead>
+                                        <tr>
+                                            <th>Usuário</th>
+                                            <th>Clínica</th>
+                                            <th>Role</th>
+                                            <th>Último Login</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBodyAdminUsers">
+                                        <tr>
+                                            <td colspan="5" class="loading-state">Carregando usuários...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="adminLogs" class="admin-tab-content hidden">
+                            <div class="admin-actions-bar">
+                                <button class="btn btn-secondary btn-sm" id="btnRefreshLogs">
+                                    <i class="ph ph-arrows-clockwise"></i> Atualizar Logs
+                                </button>
+                            </div>
+                            <div class="table-card">
+                                <table id="tableAdminLogs">
+                                    <thead>
+                                        <tr>
+                                            <th>Data/Hora</th>
+                                            <th>Ação</th>
+                                            <th>Entidade</th>
+                                            <th>Usuário</th>
+                                            <th>IP</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBodyAdminLogs">
+                                        <tr>
+                                            <td colspan="5" class="loading-state">Carregando logs...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: NOVA CLÍNICA -->
+            <div id="modalNewClinic" class="modal-overlay" style="display: none;">
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3>Cadastrar Nova Clínica</h3>
+                        <button class="close-modal" id="btnCloseModalClinic">&times;</button>
+                    </div>
+                    <form id="formNewClinic">
+                        <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Nome da Clínica</label>
+                                <input type="text" id="clinicName" required placeholder="Ex: Odonto Premium">
+                            </div>
+                            <div class="form-group">
+                                <label>Slug (URL)</label>
+                                <input type="text" id="clinicSlug" required placeholder="ex: odonto-premium">
+                            </div>
+                            <div class="form-group">
+                                <label>Tipo</label>
+                                <select id="clinicType" required>
+                                    <option value="odonto">Odontologia</option>
+                                    <option value="estetica">Estética</option>
+                                    <option value="vet">Veterinária</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Plano</label>
+                                <select id="clinicPlan" required>
+                                    <option value="basico">Básico (R$ 199)</option>
+                                    <option value="premium">Premium (R$ 499)</option>
+                                    <option value="enterprise">Enterprise (R$ 999)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr style="margin: 1.5rem 0; border: 0; border-top: 1px solid var(--border-color);">
+
+                        <h4>Usuário Administrador</h4>
+                        <div class="form-grid"
+                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                            <div class="form-group">
+                                <label>Nome Completo</label>
+                                <input type="text" id="adminUserName" required placeholder="Ex: Dr. João Silva">
+                            </div>
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" id="adminUserLogin" required placeholder="ex: joaosilva">
+                            </div>
+                            <div class="form-group">
+                                <label>Email (Auth)</label>
+                                <input type="email" id="adminUserEmail" required placeholder="email@clinica.com">
+                            </div>
+                            <div class="form-group">
+                                <label>Senha</label>
+                                <input type="password" id="adminUserPass" required placeholder="******">
+                            </div>
+                        </div>
+
+                        <div class="modal-actions"
+                            style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                            <button type="button" class="btn btn-secondary" id="btnCancelClinic">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnSaveClinic">Criar Clínica</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Prontuário Digital (Ficha Clínica Completa) -->
+    <div id="modalProntuario" class="modal-overlay hidden">
+        <div class="modal-content"
+            style="max-width: 950px; width: 95%; height: 95vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: var(--primary); color: white; padding: 1rem 1.5rem;">
+                <div>
+                    <h3 style="color: white; margin: 0;">Prontuário Odontológico Completo</h3>
+                    <p id="prontuarioPacienteNome"
+                        style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin: 4px 0 0 0;"></p>
+                </div>
+                <button class="btn-close" id="btnCloseProntuario" style="color: white;"><i class="ph ph-x"></i></button>
+            </div>
+
+            <!-- Sub-Navegação do Prontuário -->
+            <div class="prontuario-tabs"
+                style="display: flex; background: #F1F5F9; padding: 0 1rem; border-bottom: 1px solid var(--border);">
+                <button class="pront-tab-btn active" data-tab="tab-identificacao">Identificação</button>
+                <button class="pront-tab-btn" data-tab="tab-anamnese">Anamnese</button>
+                <button class="pront-tab-btn" data-tab="tab-exame">Exame Clínico</button>
+                <button class="pront-tab-btn" data-tab="tab-evolucao">Evolução & Plano</button>
+                <button class="pront-tab-btn" data-tab="tab-fotos">Fotos</button>
+                <button class="pront-tab-btn" data-tab="tab-contrato">Contrato</button>
+                <button class="pront-tab-btn" data-tab="tab-odontograma">Odontograma</button>
+                <button class="pront-tab-btn" data-tab="tab-whatsapp"><i class="ph ph-whatsapp-logo"></i> WhatsApp
+                    IA</button>
+            </div>
+
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 1.5rem;">
+                <form id="formProntuario">
+                    <input type="hidden" id="prontuarioPacienteId">
+
+                    <!-- ABA 1: IDENTIFICAÇÃO -->
+                    <div id="tab-identificacao" class="pront-tab-content">
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                            <div class="form-group"><label>CPF</label><input type="text" id="p-cpf"
+                                    placeholder="000.000.000-00"></div>
+                            <div class="form-group"><label>RG</label><input type="text" id="p-rg"></div>
+                            <div class="form-group"><label>Data de Nasc.</label><input type="date" id="p-nasc"></div>
+                            <div class="form-group"><label>Gênero</label><select id="p-genero">
+                                    <option value="">Selecione</option>
+                                    <option>Masculino</option>
+                                    <option>Feminino</option>
+                                    <option>Outro</option>
+                                </select></div>
+                            <div class="form-group"><label>Ocupação</label><input type="text" id="p-ocupacao"></div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Endereço</label><input
+                                    type="text" id="p-endereco"></div>
+                            <div class="form-group"><label>Indicado Por</label><input type="text" id="p-indicado"></div>
+                            <div class="form-group"><label>Início Tratamento</label><input type="date" id="p-inicio">
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;"><label>Em caso de Emergência
+                                    (Contato)</label><input type="text" id="p-emergencia"></div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 2: ANAMNESE -->
+                    <div id="tab-anamnese" class="pront-tab-content hidden">
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="anamnese-row"><label>Possui algum problema de saúde?</label>
+                                <div class="radio-group"><input type="text" id="a-saude" placeholder="Sim/Não. Qual?">
+                                </div>
+                            </div>
+                            <div class="anamnese-row"><label>Está sob tratamento médico?</label>
+                                <div class="radio-group"><input type="text" id="a-tratamento" placeholder="Por quê?">
+                                </div>
+                            </div>
+                            <div class="anamnese-row"><label>Faz uso de medicamentos?</label>
+                                <div class="radio-group"><input type="text" id="a-medicamentos" placeholder="Quais?">
+                                </div>
+                            </div>
+                            <div class="anamnese-row"><label>Tem alergia a algum medicamento?</label>
+                                <div class="radio-group"><input type="text" id="a-alergia" placeholder="Quais?"></div>
+                            </div>
+                            <div class="anamnese-row"><label>Como costuma estar sua pressão?</label>
+                                <div class="radio-group"><input type="text" id="a-pressao"></div>
+                            </div>
+                            <div class="anamnese-row"><label>Fumante?</label>
+                                <div class="radio-group"><input type="text" id="a-fumante"></div>
+                            </div>
+                            <div class="anamnese-row"><label>Sensibilidade ou Sangramento gengival?</label>
+                                <div class="radio-group"><input type="text" id="a-gengiva"></div>
+                            </div>
+                            <div class="anamnese-row"><label>Hábitos (Rói unhas, morde canetas)?</label>
+                                <div class="radio-group"><input type="text" id="a-habitos"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 3: EXAME CLÍNICO -->
+                    <div id="tab-exame" class="pront-tab-content hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: var(--primary);">Exame Intra-Oral</h4>
+                                <div class="form-group"><label>Higiene</label><select id="e-higiene">
+                                        <option>Boa</option>
+                                        <option>Regular</option>
+                                        <option>Ruim</option>
+                                    </select></div>
+                                <div class="form-group"><label>Halitose</label><select id="e-halitose">
+                                        <option>Ausente</option>
+                                        <option>Leve</option>
+                                        <option>Forte</option>
+                                    </select></div>
+                                <div class="form-group"><label>Mucosa / Língua</label><input type="text" id="e-mucosa">
+                                </div>
+                                <div class="form-group"><label>Palato / Lábios</label><input type="text" id="e-palato">
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 1rem; color: var(--primary);">Observações Gerais</h4>
+                                <textarea id="e-obs" rows="8" style="width: 100%;"
+                                    placeholder="Observações do exame clínico..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 4: EVOLUÇÃO & PLANO -->
+                    <div id="tab-evolucao" class="pront-tab-content hidden">
+                        <div style="display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem;">
+                            <div class="timeline-section">
+                                <h4 style="margin-bottom: 1rem;">Linha do Tempo</h4>
+                                <div id="timelineContainer" class="timeline-container"
+                                    style="max-height: 300px; overflow-y: auto;"></div>
+                                <div style="margin-top: 1.5rem;">
+                                    <label>Nova Evolução / Anotação</label>
+                                    <textarea id="inputProntuarioText" rows="4" style="width: 100%;"
+                                        placeholder="O que foi feito hoje?"></textarea>
+                                </div>
+                            </div>
+                            <div class="plano-section">
+                                <h4 style="margin-bottom: 1rem;">Plano de Tratamento</h4>
+                                <textarea id="p-plano" rows="15"
+                                    style="width: 100%; background: #FFFBEB; border-color: #FDE68A;"
+                                    placeholder="Descreva o planejamento das próximas sessões..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 5: FOTOS -->
+                    <div id="tab-fotos" class="pront-tab-content hidden">
+                        <div class="photos-section">
+                            <h4 style="margin-bottom: 1rem;">Galeria de Imagens</h4>
+                            <div id="photoGallery" class="photo-gallery"
+                                style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem;"></div>
+                            <div style="margin-top: 1rem;">
+                                <label for="inputPhoto" class="btn btn-secondary" style="cursor: pointer;">
+                                    <i class="ph ph-upload-simple"></i> Adicionar Foto
+                                </label>
+                                <input type="file" id="inputPhoto" accept="image/*" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABA 6: CONTRATO -->
+                    <div id="tab-contrato" class="pront-tab-content hidden">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0;">Contrato de Prestação de Serviços</h4>
+                            <button type="button" class="btn btn-secondary" id="btnImprimirContrato"
+                                style="background: #E2E8F0; color: #475569;">
+                                <i class="ph ph-printer"></i> Imprimir Contrato
+                            </button>
+                        </div>
+                        <textarea id="p-contrato" rows="15" style="width: 100%; font-family: monospace;"
+                            placeholder="Texto do contrato..."></textarea>
+                    </div>
+
+
+                    <!-- ABA 7: ODONTOGRAMA -->
+                    <div id="tab-odontograma" class="pront-tab-content hidden">
+                        <div style="text-align: center; margin-bottom: 2rem;">
+                            <h4 style="color: var(--primary);">Mapa Dental Interativo</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">Clique no dente para mudar a
+                                situação clínica</p>
+                        </div>
+
+                        <div class="odontograma-container">
+                            <!-- Arcada Superior -->
+                            <div class="teeth-row superior" id="teeth-superior"></div>
+                            <div style="height: 40px;"></div>
+                            <!-- Arcada Inferior -->
+                            <div class="teeth-row inferior" id="teeth-inferior"></div>
+                        </div>
+
+                        <div id="toothSelector" class="tooth-selector hidden">
+                            <h5>Dente <span id="selectedToothNum">--</span></h5>
+                            <div class="selector-options">
+                                <button type="button" class="opt-higido" data-status="higido">Hígido</button>
+                                <button type="button" class="opt-carie" data-status="carie">Cárie</button>
+                                <button type="button" class="opt-restaurado"
+                                    data-status="restaurado">Restaurado</button>
+                                <button type="button" class="opt-canal" data-status="canal">Canal</button>
+                                <button type="button" class="opt-ausente" data-status="ausente">Ausente</button>
+                                <button type="button" class="opt-protese" data-status="protese">Prótese</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer"
+                style="padding: 1rem 1.5rem; background: #F8FAFC; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <button type="button" class="btn btn-secondary" id="btnImprimirProntuario"
+                        style="background: #E2E8F0; color: #475569;">
+                        <i class="ph ph-printer"></i> Imprimir / PDF
+                    </button>
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-secondary" id="btnCancelProntuario">Sair sem salvar</button>
+                    <button type="button" class="btn btn-primary" id="btnSalvarProntuario"
+                        style="background: var(--primary);">Salvar Ficha Completa</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Novo Agendamento -->
+    <div id="modalNovoAgendamento" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Agendamento</h3>
+                <button class="btn-close" id="btnCloseModal"><i class="ph ph-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovoAgendamento">
+                    <div class="form-group">
+                        <label for="inputNome">Nome do Paciente</label>
+                        <input type="text" id="inputNome" required placeholder="Ex: João da Silva">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputTelefone">Telefone / WhatsApp</label>
+                        <input type="text" id="inputTelefone" required placeholder="Ex: 5588999999999">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputProcedimento">Procedimento</label>
+                        <input type="text" id="inputProcedimento" required placeholder="Ex: Avaliação Geral">
+                    </div>
+                    <div class="form-group">
+                        <label for="inputStatus">Status</label>
+                        <select id="inputStatus" required>
+                            <option value="Agendado">Agendado</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Concluído">Concluído</option>
+                            <option value="Cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="inputData">Data e Hora</label>
+                        <input type="datetime-local" id="inputData" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" id="btnSalvarAgendamento">Salvar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- MODAL: NOVA CLÍNICA (SUPERADMIN) -->
+            <div id="modalNovaClinica" class="modal">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3>Provisionar Nova Clínica</h3>
+                        <span class="close" onclick="closeModal('modalNovaClinica')">&times;</span>
+                    </div>
+                    <form id="formNovaClinica">
+                        <div class="form-group">
+                            <label>Nome da Clínica</label>
+                            <input type="text" id="adminNewClinicName" placeholder="Ex: Clínica Sorriso & Vida"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tipo de Especialidade</label>
+                            <select id="adminNewClinicType" required>
+                                <option value="odontologia">Odontologia</option>
+                                <option value="veterinaria">Veterinária</option>
+                                <option value="estetica">Estética & Bem-estar</option>
+                                <option value="psicologia">Psicologia</option>
+                                <option value="fisioterapia">Fisioterapia</option>
+                                <option value="medicina_geral">Medicina Geral</option>
+                                <option value="nutricao">Nutrição</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail Administrativo (Login)</label>
+                            <input type="email" id="adminNewClinicEmail" placeholder="admin@clinica.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Senha Provisória</label>
+                            <input type="password" id="adminNewClinicPassword" placeholder="No mínimo 6 caracteres"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label>Plano Inicial</label>
+                            <select id="adminNewClinicPlan">
+                                <option value="free">Free Trial (15 dias)</option>
+                                <option value="basic">Plano Básico</option>
+                                <option value="pro">Plano Pro</option>
+                                <option value="enterprise">Plano Enterprise</option>
+                            </select>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary"
+                                onclick="closeModal('modalNovaClinica')">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Criar Clínica e Usuário</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- Modal Novo Lançamento Financeiro -->
+            <div id="modalFinanceiro" class="modal-overlay hidden">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h2>Novo Lançamento</h2>
+                        <button class="close-modal" id="closeModalFinanceiro"><i class="ph ph-x"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formFinanceiro">
+                            <div class="form-group">
+                                <label>Paciente</label>
+                                <select id="finPaciente" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Valor Total (R$)</label>
+                                <input type="number" id="finValor" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Descrição / Procedimento</label>
+                                <input type="text" id="finDescricao"
+                                    placeholder="Ex: Avaliação Inicial ou Pagamento Parcial" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Método de Pagamento</label>
+                                <select id="finMetodo" required>
+                                    <option value="PIX">PIX</option>
+                                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                                    <option value="Cartão de Débito">Cartão de Débito</option>
+                                    <option value="Dinheiro">Dinheiro</option>
+                                </select>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary"
+                                    id="btnCancelFinanceiro">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar Lançamento</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Novo Profissional -->
+            <div id="modalEquipe" class="modal-overlay hidden">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h2>Novo Profissional</h2>
+                        <button class="close-modal" id="closeModalEquipe"><i class="ph ph-x"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formEquipe">
+                            <input type="hidden" id="eqpEditId">
+                            <div class="form-group">
+                                <label>Nome do Dentista</label>
+                                <input type="text" id="eqpNome" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Google Calendar ID</label>
+                                <input type="text" id="eqpCalendar" placeholder="ex: agenda@gmail.com">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" id="btnCancelEquipe">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar Profissional</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Editar Paciente -->
+            <div id="modalEditPatient" class="modal-overlay hidden">
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h2>Editar Paciente</h2>
+                        <button class="btn-close" id="closeEditPatient"><i class="ph ph-x"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="formEditPatient">
+                            <input type="hidden" id="editPatientId">
+                            <div class="form-group">
+                                <label>Nome</label>
+                                <input type="text" id="editPatientName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone / WhatsApp</label>
+                                <input type="text" id="editPatientPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" id="editPatientEmail">
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary"
+                                    id="btnCancelEditPatient">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supabase JS via CDN -->
+            <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+            <!-- Chart.js via CDN -->
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <!-- FullCalendar via CDN (includes Google Calendar plugin) -->
+            <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+            <!-- Excel Export (SheetJS) -->
+            <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+            <!-- SaaS Config -->
+            <script src="config.js?v=2"></script>
+            <!-- Main App Logic -->
+            <script src="app.js?v=32"></script>
+</body>
+
+</html>

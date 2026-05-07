@@ -1,0 +1,133 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
+import { useAuthStore } from '@/store/auth'
+import { formatDate } from '@/lib/utils'
+import type { Professional } from '@/types'
+import styles from './equipe.module.css'
+
+interface NewProf { name: string; specialty: string; google_calendar_id: string }
+const BLANK: NewProf = { name: '', specialty: '', google_calendar_id: '' }
+
+export default function EquipePage() {
+  const { clinic } = useAuthStore()
+  const [professionals, setProfessionals] = useState<Professional[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState<NewProf>(BLANK)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (clinic) loadData()
+  }, [clinic])
+
+  async function loadData() {
+    if (!clinic) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('professionals')
+      .select('*')
+      .eq('clinic_id', clinic.id)
+      .order('name')
+    setProfessionals((data ?? []) as Professional[])
+    setLoading(false)
+  }
+
+  async function handleSave() {
+    if (!clinic || !form.name) return
+    setSaving(true)
+    const supabase = createClient()
+    await supabase.from('professionals').insert([{
+      clinic_id: clinic.id,
+      name: form.name,
+      specialty: form.specialty || null,
+      google_calendar_id: form.google_calendar_id || null,
+    }])
+    setSaving(false)
+    setShowModal(false)
+    setForm(BLANK)
+    loadData()
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm('Remover profissional?')) return
+    const supabase = createClient()
+    await supabase.from('professionals').delete().eq('id', id)
+    loadData()
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Equipe</h1>
+          <p className={styles.sub}>{professionals.length} profissionais</p>
+        </div>
+        <button className={styles.btnPrimary} onClick={() => setShowModal(true)}>+ Novo Profissional</button>
+      </div>
+
+      {loading ? <p className={styles.loading}>Carregando...</p> : (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Especialidade</th>
+                <th>Google Calendar ID</th>
+                <th>Cadastrado em</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {professionals.length === 0 ? (
+                <tr><td colSpan={5} className={styles.empty}>Nenhum profissional cadastrado.</td></tr>
+              ) : professionals.map((p) => (
+                <tr key={p.id}>
+                  <td className={styles.bold}>{p.name}</td>
+                  <td>{p.specialty ?? '-'}</td>
+                  <td><code className={styles.code}>{p.google_calendar_id ?? '-'}</code></td>
+                  <td>{formatDate(p.created_at, true)}</td>
+                  <td>
+                    <button className={styles.btnDelete} onClick={() => handleDelete(p.id)}>Remover</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {showModal && (
+        <div className={styles.overlay} onClick={() => setShowModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2>Novo Profissional</h2>
+              <button className={styles.btnClose} onClick={() => setShowModal(false)}>✕</button>
+            </div>
+            <div className={styles.modalBody}>
+              <div className={styles.field}>
+                <label>Nome *</label>
+                <input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
+              </div>
+              <div className={styles.field}>
+                <label>Especialidade</label>
+                <input value={form.specialty} onChange={(e) => setForm((p) => ({ ...p, specialty: e.target.value }))} placeholder="Ex: Ortodontia, Clínico Geral..." />
+              </div>
+              <div className={styles.field}>
+                <label>Google Calendar ID</label>
+                <input value={form.google_calendar_id} onChange={(e) => setForm((p) => ({ ...p, google_calendar_id: e.target.value }))} placeholder="ex: nome@clinica.com" />
+                <span className={styles.hint}>ID do calendário do profissional no Google Calendar</span>
+              </div>
+            </div>
+            <div className={styles.modalFooter}>
+              <button className={styles.btnCancel} onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className={styles.btnSave} onClick={handleSave} disabled={saving || !form.name}>
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

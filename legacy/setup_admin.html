@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Setup Admin - My Clinica</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f4f4f9; }
+        .card { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        button { background: #7C3AED; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        #status { margin-top: 1rem; font-size: 0.9rem; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Criar Usuário Super Admin</h2>
+        <p>Usuário: <strong>admin</strong></p>
+        <button id="btnCreate">Criar Agora</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btnCreate');
+        const status = document.getElementById('status');
+
+        btn.onclick = async () => {
+            btn.disabled = true;
+            status.textContent = 'Iniciando...';
+            
+            try {
+                // Fix: Rename variable to avoid shadowing global 'supabase' object
+                const supabaseClient = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+                
+                // 1. Sign Up (necessário e-mail para o Supabase Auth)
+                const email = 'admin@myclinica.com';
+                const password = 'dimitresouza10';
+                
+                status.textContent = 'Criando conta no Auth...';
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password
+                });
+
+                if (authError) throw authError;
+
+                if (!authData.user) throw new Error('Usuário criado mas sem retorno de ID. Verifique se o e-mail já existe.');
+
+                const userId = authData.user.id;
+                status.textContent = 'Conta criada. Vinculando permissões...';
+
+                // 2. Criar registro na clinic_users
+                const { error: userError } = await supabaseClient
+                    .from('clinic_users')
+                    .insert({
+                        user_id: userId,
+                        display_name: 'Administrador Sistema',
+                        username: 'admin',
+                        email: email,
+                        role: 'admin',
+                        is_superadmin: true
+                    });
+
+                if (userError) throw userError;
+
+                status.style.color = 'green';
+                status.textContent = 'Sucesso! Usuário "admin" criado como Super Admin. Você já pode fechar esta página e fazer login.';
+            } catch (err) {
+                console.error(err);
+                status.style.color = 'red';
+                status.textContent = 'Erro: ' + err.message;
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+</html>

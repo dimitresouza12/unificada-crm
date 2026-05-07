@@ -1,0 +1,46 @@
+@import '../styles/design-system.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html, body {
+  height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-agendado   { background: #DBEAFE; color: #1E40AF; }
+.status-confirmado { background: #D1FAE5; color: #065F46; }
+.status-concluido  { background: #D1FAE5; color: #065F46; }
+.status-cancelado  { background: #FEE2E2; color: #B91C1C; }
+.status-pendente   { background: #FEF3C7; color: #92400E; }
+.status-faltou     { background: #F3E8FF; color: #6D28D9; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
