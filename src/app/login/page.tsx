@@ -180,7 +180,7 @@ export default function LoginPage() {
             Entrar
           </button>
           <button className={`${styles.modeTab} ${mode === 'register' ? styles.modeTabActive : ''}`} onClick={switchToRegister}>
-            Sou Paciente
+            Cadastrar
           </button>
         </div>
 
