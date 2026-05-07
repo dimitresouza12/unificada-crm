@@ -11,10 +11,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    setStep('')
     setLoading(true)
 
     const supabase = createClient()
@@ -23,6 +25,7 @@ export default function LoginPage() {
       let email = credential.trim()
 
       if (!email.includes('@')) {
+        setStep('Buscando usuário...')
         const { data: userData, error: lookupErr } = await supabase
           .from('clinic_users')
           .select('email')
@@ -31,14 +34,16 @@ export default function LoginPage() {
           .single()
 
         if (lookupErr || !userData?.email) {
-          throw new Error('Usuário não encontrado.')
+          throw new Error('Usuário não encontrado. Verifique o nome de usuário.')
         }
         email = userData.email
       }
 
+      setStep('Verificando senha...')
       const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
       if (authErr) throw authErr
 
+      setStep('Carregando clínica...')
       const { data: clinicUser, error: cuErr } = await supabase
         .from('clinic_users')
         .select('*, clinics(*)')
@@ -46,8 +51,8 @@ export default function LoginPage() {
         .eq('is_active', true)
         .single<ClinicUser & { clinics: Clinic }>()
 
-      if (cuErr) throw new Error('Erro ao carregar dados da clínica: ' + cuErr.message)
-      if (!clinicUser?.clinics) throw new Error('Clínica não encontrada para este usuário.')
+      if (cuErr) throw new Error('Erro ao carregar clínica: ' + cuErr.message)
+      if (!clinicUser?.clinics) throw new Error('Clínica não encontrada. Contate o administrador.')
 
       const clinic: AuthClinic = {
         id: clinicUser.clinic_id,
@@ -66,16 +71,13 @@ export default function LoginPage() {
         isSuperAdmin: clinicUser.is_superadmin,
       }
 
+      setStep('Abrindo painel...')
       setSession(clinic, user)
-      // Usa window.location para garantir reload completo e hidratação do store
       window.location.href = '/dashboard'
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro desconhecido.'
-      setError(
-        msg === 'Invalid login credentials'
-          ? 'Usuário ou senha incorretos.'
-          : msg
-      )
+      const msg = err instanceof Error ? err.message : String(err)
+      setError(msg === 'Invalid login credentials' ? 'Usuário ou senha incorretos.' : msg)
+      setStep('')
     } finally {
       setLoading(false)
     }
@@ -117,9 +119,10 @@ export default function LoginPage() {
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
+          {step && !error && <p className={styles.step}>{step}</p>}
 
           <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? 'Autenticando...' : 'Entrar'}
+            {loading ? step || 'Autenticando...' : 'Entrar'}
           </button>
         </form>
       </div>

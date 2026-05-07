@@ -94,3 +94,10 @@
 
 .btn:hover:not(:disabled) { opacity: 0.88; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.step {
+  font-size: 0.82rem;
+  color: var(--brand-primary);
+  text-align: center;
+  font-weight: 500;
+}
