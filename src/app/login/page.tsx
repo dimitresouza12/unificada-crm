@@ -1,13 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import type { Clinic, ClinicUser, AuthClinic, AuthUser } from '@/types'
 import styles from './login.module.css'
 
 export default function LoginPage() {
-  const router = useRouter()
   const setSession = useAuthStore((s) => s.setSession)
   const [credential, setCredential] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +31,7 @@ export default function LoginPage() {
           .single()
 
         if (lookupErr || !userData?.email) {
-          throw new Error('Usuário não encontrado ou sem email vinculado.')
+          throw new Error('Usuário não encontrado.')
         }
         email = userData.email
       }
@@ -48,7 +46,8 @@ export default function LoginPage() {
         .eq('is_active', true)
         .single<ClinicUser & { clinics: Clinic }>()
 
-      if (cuErr || !clinicUser?.clinics) throw new Error('Clínica não encontrada para este usuário.')
+      if (cuErr) throw new Error('Erro ao carregar dados da clínica: ' + cuErr.message)
+      if (!clinicUser?.clinics) throw new Error('Clínica não encontrada para este usuário.')
 
       const clinic: AuthClinic = {
         id: clinicUser.clinic_id,
@@ -68,9 +67,10 @@ export default function LoginPage() {
       }
 
       setSession(clinic, user)
-      router.push('/dashboard')
+      // Usa window.location para garantir reload completo e hidratação do store
+      window.location.href = '/dashboard'
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao autenticar.'
+      const msg = err instanceof Error ? err.message : 'Erro desconhecido.'
       setError(
         msg === 'Invalid login credentials'
           ? 'Usuário ou senha incorretos.'
