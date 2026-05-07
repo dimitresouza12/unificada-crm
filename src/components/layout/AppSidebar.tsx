@@ -30,14 +30,23 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
     ? [...NAV, { path: '/admin', label: 'Admin', icon: '🛡️' }]
     : NAV
 
+  const initials = user.displayName
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+
   return (
     <aside className={styles.sidebar} style={{ '--clinic-color': clinic.color } as React.CSSProperties}>
       <div className={styles.brand}>
-        {clinic.logo ? (
-          <img src={clinic.logo} alt={clinic.name} className={styles.logo} />
-        ) : (
-          <span className={styles.logoText}>My<strong>Clinica</strong></span>
-        )}
+        <div className={styles.brandTop}>
+          {clinic.logo ? (
+            <img src={clinic.logo} alt={clinic.name} className={styles.logo} />
+          ) : (
+            <span className={styles.logoText}>My<strong>Clinica</strong></span>
+          )}
+        </div>
         <span className={styles.clinicName}>{clinic.name}</span>
       </div>
 
@@ -58,6 +67,7 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
       </nav>
 
       <div className={styles.footer}>
+        <div className={styles.avatar}>{initials}</div>
         <div className={styles.userInfo}>
           <span className={styles.userName}>{user.displayName}</span>
           <span className={styles.userRole}>{user.role}</span>

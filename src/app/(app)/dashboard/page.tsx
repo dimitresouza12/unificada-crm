@@ -14,7 +14,7 @@ interface Stats {
 }
 
 export default function DashboardPage() {
-  const { clinic } = useAuthStore()
+  const { clinic, user } = useAuthStore()
   const [stats, setStats] = useState<Stats>({ totalPatients: 0, appointmentsToday: 0, monthRevenue: 0, pendingAppointments: 0 })
   const [recentAppts, setRecentAppts] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
@@ -26,7 +26,6 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     if (!clinic) return
-    // supabase singleton
     const today = new Date()
     const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString()
     const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString()
@@ -40,7 +39,8 @@ export default function DashboardPage() {
       supabase.from('appointments').select('*, patients(name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }).limit(8),
     ])
 
-    const monthRevenue = ((revenueRes.data ?? []) as Pick<FinancialRecord, 'total_amount'>[]).reduce((sum, r) => sum + (r.total_amount ?? 0), 0)
+    const monthRevenue = ((revenueRes.data ?? []) as Pick<FinancialRecord, 'total_amount'>[])
+      .reduce((sum, r) => sum + (r.total_amount ?? 0), 0)
 
     setStats({
       totalPatients: patientsRes.count ?? 0,
@@ -52,16 +52,24 @@ export default function DashboardPage() {
     setLoading(false)
   }
 
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
+
   const cards = [
-    { label: 'Pacientes ativos', value: stats.totalPatients, icon: '👥', color: '#7C3AED' },
-    { label: 'Consultas hoje', value: stats.appointmentsToday, icon: '📅', color: '#0ea5e9' },
-    { label: 'Agendamentos abertos', value: stats.pendingAppointments, icon: '⏳', color: '#f59e0b' },
-    { label: 'Receita do mês', value: formatCurrency(stats.monthRevenue), icon: '💰', color: '#10b981' },
+    { label: 'Pacientes ativos',     value: stats.totalPatients,                    icon: '👥', color: '#7C3AED' },
+    { label: 'Consultas hoje',        value: stats.appointmentsToday,                icon: '📅', color: '#0EA5E9' },
+    { label: 'Agendamentos abertos', value: stats.pendingAppointments,               icon: '⏳', color: '#F59E0B' },
+    { label: 'Receita do mês',       value: formatCurrency(stats.monthRevenue),      icon: '💰', color: '#10B981' },
   ]
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>Dashboard</h1>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.title}>{greeting}, {user?.displayName?.split(' ')[0]}</h1>
+        <p className={styles.subtitle}>
+          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+      </div>
 
       {loading ? (
         <p className={styles.loading}>Carregando...</p>
@@ -70,7 +78,7 @@ export default function DashboardPage() {
           <div className={styles.cards}>
             {cards.map((c) => (
               <div key={c.label} className={styles.card} style={{ '--card-accent': c.color } as React.CSSProperties}>
-                <div className={styles.cardIcon}>{c.icon}</div>
+                <div className={styles.cardIconWrap}>{c.icon}</div>
                 <div className={styles.cardBody}>
                   <span className={styles.cardValue}>{c.value}</span>
                   <span className={styles.cardLabel}>{c.label}</span>
@@ -80,7 +88,9 @@ export default function DashboardPage() {
           </div>
 
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Próximos agendamentos</h2>
+            <div className={styles.sectionHeader}>
+              <h2 className={styles.sectionTitle}>Próximos agendamentos</h2>
+            </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>

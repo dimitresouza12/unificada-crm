@@ -1,8 +1,12 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  height: 100%;
+  gap: 1.5rem;
+  animation: fadeUp 0.35s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .header {
@@ -10,12 +14,14 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.55rem;
+  font-weight: 750;
   color: var(--text-primary);
+  letter-spacing: -0.4px;
 }
 
 .sub {
@@ -25,8 +31,9 @@
 }
 
 .btnPrimary {
-  padding: 0.6rem 1.1rem;
+  padding: 0.6rem 1.15rem;
   background: var(--brand-primary);
+  background: linear-gradient(135deg, #7C3AED 0%, #9F67FF 100%);
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
@@ -34,9 +41,11 @@
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.25);
 }
-.btnPrimary:hover { opacity: 0.88; }
+.btnPrimary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btnPrimary:active { transform: translateY(0); }
 
 .toolbar {
   display: flex;
