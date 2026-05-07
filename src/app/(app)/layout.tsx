@@ -7,11 +7,16 @@ import styles from './app.module.css'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { clinic, user } = useAuthStore()
+  const { clinic, user, _hydrated } = useAuthStore()
 
   useEffect(() => {
-    if (!clinic || !user) router.replace('/login')
-  }, [clinic, user, router])
+    if (_hydrated && (!clinic || !user)) {
+      router.replace('/login')
+    }
+  }, [_hydrated, clinic, user, router])
+
+  // Aguarda hidratação do Zustand antes de renderizar ou redirecionar
+  if (!_hydrated) return null
 
   if (!clinic || !user) return null
 
