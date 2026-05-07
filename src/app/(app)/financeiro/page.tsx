@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { FinancialRecord, Patient } from '@/types'
@@ -26,7 +26,7 @@ export default function FinanceiroPage() {
 
   async function loadData() {
     if (!clinic) return
-    const supabase = createClient()
+    // supabase singleton
     const [recRes, patRes] = await Promise.all([
       supabase.from('financial_records').select('*, patients(id, name)').eq('clinic_id', clinic.id).order('created_at', { ascending: false }),
       supabase.from('patients').select('id, name').eq('clinic_id', clinic.id).eq('is_active', true).order('name'),
@@ -39,7 +39,7 @@ export default function FinanceiroPage() {
   async function handleSave() {
     if (!clinic) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('financial_records').insert([{
       clinic_id: clinic.id,
       patient_id: form.patient_id || null,

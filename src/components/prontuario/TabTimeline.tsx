@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate } from '@/lib/utils'
 import type { Patient, MedicalRecord, RecordEntry } from '@/types'
@@ -22,7 +22,7 @@ export function TabTimeline({ patient, record, entries, clinicId, onSaved }: Pro
   async function handleAddEntry() {
     if (!text.trim()) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     try {
       let recordId = record?.id
       if (!recordId) {

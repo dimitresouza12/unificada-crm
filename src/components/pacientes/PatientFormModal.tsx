@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Patient } from '@/types'
 import styles from './PatientFormModal.module.css'
 
@@ -48,7 +48,7 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
     e.preventDefault()
     setError('')
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     try {
       const payload = { ...form, clinic_id: clinicId }
       if (isNew) {

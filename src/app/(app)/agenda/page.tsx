@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone } from '@/lib/utils'
 import type { Appointment, Patient, Professional } from '@/types'
@@ -40,7 +40,7 @@ export default function AgendaPage() {
 
   async function loadData() {
     if (!clinic) return
-    const supabase = createClient()
+    // supabase singleton
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
         .from('appointments')
@@ -65,7 +65,7 @@ export default function AgendaPage() {
   async function handleSave() {
     if (!clinic || !form.patient_id || !form.scheduled_at) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('appointments').insert([{ ...form, clinic_id: clinic.id }])
     setSaving(false)
     setShowModal(false)
@@ -74,7 +74,7 @@ export default function AgendaPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('appointments').update({ status }).eq('id', id)
     loadData()
     setSelected(null)

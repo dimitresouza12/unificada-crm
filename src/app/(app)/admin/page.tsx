@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate } from '@/lib/utils'
 import type { Clinic, ClinicUser, AuditLog } from '@/types'
@@ -31,7 +31,7 @@ export default function AdminPage() {
   }, [])
 
   async function loadAll() {
-    const supabase = createClient()
+    // supabase singleton
     const [clinicsRes, usersRes, logsRes] = await Promise.all([
       supabase.from('clinics').select('*').order('created_at', { ascending: false }),
       supabase.from('clinic_users').select('*, clinics(name)').order('created_at', { ascending: false }).limit(100),
@@ -46,7 +46,7 @@ export default function AdminPage() {
   async function handleCreateClinic() {
     if (!form.name || !form.slug) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('clinics').insert([form])
     setSaving(false)
     setShowModal(false)
@@ -55,7 +55,7 @@ export default function AdminPage() {
   }
 
   async function toggleClinic(id: string, active: boolean) {
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('clinics').update({ is_active: !active }).eq('id', id)
     loadAll()
   }

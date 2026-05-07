@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Appointment, FinancialRecord } from '@/types'
@@ -26,7 +26,7 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     if (!clinic) return
-    const supabase = createClient()
+    // supabase singleton
     const today = new Date()
     const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString()
     const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString()

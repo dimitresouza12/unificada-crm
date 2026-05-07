@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Patient, MedicalRecord } from '@/types'
 import styles from './TabFicha.module.css'
 
@@ -48,7 +48,7 @@ export function TabFicha({ patient, record, clinicId, clinicName, onSaved }: Pro
 
   async function handleSave() {
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     try {
       const payload = {
         clinic_id: clinicId,

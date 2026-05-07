@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Patient, MedicalRecord, RecordEntry } from '@/types'
 import { TabFicha } from './TabFicha'
 import { TabOdontograma } from './TabOdontograma'
@@ -28,7 +28,7 @@ export function ProntuarioModal({ patient, clinicId, clinicName, onClose }: Prop
   }, [patient.id])
 
   async function loadRecord() {
-    const supabase = createClient()
+    // supabase singleton
     const [recRes, entriesRes] = await Promise.all([
       supabase.from('medical_records').select('*').eq('patient_id', patient.id).maybeSingle<MedicalRecord>(),
       supabase.from('record_entries').select('*').eq('patient_id', patient.id).order('created_at', { ascending: false }),

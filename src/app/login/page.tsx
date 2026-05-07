@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import type { Clinic, ClinicUser, AuthClinic, AuthUser } from '@/types'
 import styles from './login.module.css'
@@ -10,8 +10,8 @@ export default function LoginPage() {
   const [credential, setCredential] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -19,11 +19,10 @@ export default function LoginPage() {
     setStep('')
     setLoading(true)
 
-    const supabase = createClient()
-
     try {
       let email = credential.trim()
 
+      // Lookup email by username if no @ provided
       if (!email.includes('@')) {
         setStep('Buscando usuário...')
         const { data: userData, error: lookupErr } = await supabase
@@ -31,28 +30,31 @@ export default function LoginPage() {
           .select('email')
           .eq('username', email.toLowerCase())
           .eq('is_active', true)
-          .single()
+          .maybeSingle()
 
-        if (lookupErr || !userData?.email) {
-          throw new Error('Usuário não encontrado. Verifique o nome de usuário.')
-        }
+        if (lookupErr) throw new Error('Erro de banco: ' + lookupErr.message)
+        if (!userData?.email) throw new Error('Usuário "' + email + '" não encontrado.')
         email = userData.email
       }
 
       setStep('Verificando senha...')
-      const { data, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
-      if (authErr) throw authErr
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (authErr) throw new Error(authErr.message)
 
       setStep('Carregando clínica...')
       const { data: clinicUser, error: cuErr } = await supabase
         .from('clinic_users')
         .select('*, clinics(*)')
-        .eq('user_id', data.user.id)
+        .eq('user_id', authData.user.id)
         .eq('is_active', true)
-        .single<ClinicUser & { clinics: Clinic }>()
+        .maybeSingle<ClinicUser & { clinics: Clinic }>()
 
-      if (cuErr) throw new Error('Erro ao carregar clínica: ' + cuErr.message)
-      if (!clinicUser?.clinics) throw new Error('Clínica não encontrada. Contate o administrador.')
+      if (cuErr) throw new Error('Erro RLS: ' + cuErr.message)
+      if (!clinicUser) throw new Error('Usuário sem clínica associada.')
+      if (!clinicUser.clinics) throw new Error('Dados da clínica não encontrados.')
 
       const clinic: AuthClinic = {
         id: clinicUser.clinic_id,
@@ -78,7 +80,6 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg === 'Invalid login credentials' ? 'Usuário ou senha incorretos.' : msg)
       setStep('')
-    } finally {
       setLoading(false)
     }
   }
@@ -119,10 +120,10 @@ export default function LoginPage() {
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
-          {step && !error && <p className={styles.step}>{step}</p>}
+          {step && <p className={styles.step}>{step}</p>}
 
           <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? step || 'Autenticando...' : 'Entrar'}
+            {loading ? (step || 'Autenticando...') : 'Entrar'}
           </button>
         </form>
       </div>

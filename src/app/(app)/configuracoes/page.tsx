@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import styles from './configuracoes.module.css'
 
@@ -17,7 +17,7 @@ export default function ConfiguracoesPage() {
     e.preventDefault()
     if (!clinic) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('clinics').update({ name, address, phone, primary_color: color }).eq('id', clinic.id)
     setSession({ ...clinic, name, address, phone, color }, user!)
     setSaved(true)

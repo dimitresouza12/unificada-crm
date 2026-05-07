@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone, getStatusClass } from '@/lib/utils'
 import type { Patient, Appointment } from '@/types'
@@ -29,7 +29,7 @@ export default function PacientesPage() {
 
   async function loadData() {
     if (!clinic) return
-    const supabase = createClient()
+    // supabase singleton
     const [apptRes, patRes] = await Promise.all([
       supabase
         .from('appointments')

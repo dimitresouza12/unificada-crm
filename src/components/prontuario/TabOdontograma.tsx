@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Patient, MedicalRecord } from '@/types'
 import styles from './TabOdontograma.module.css'
 
@@ -42,7 +42,7 @@ export function TabOdontograma({ record, patient, clinicId, onSaved }: Props) {
 
   async function handleSave() {
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     const payload = { clinic_id: clinicId, patient_id: patient.id, odontogram, updated_at: new Date().toISOString() }
     if (record?.id) {
       await supabase.from('medical_records').update(payload).eq('id', record.id)

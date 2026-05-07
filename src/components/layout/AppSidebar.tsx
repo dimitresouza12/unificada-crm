@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import type { AuthClinic, AuthUser } from '@/types'
 import styles from './AppSidebar.module.css'
@@ -21,7 +21,6 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
   const clearSession = useAuthStore((s) => s.clearSession)
 
   async function handleLogout() {
-    const supabase = createClient()
     await supabase.auth.signOut()
     clearSession()
     router.replace('/login')

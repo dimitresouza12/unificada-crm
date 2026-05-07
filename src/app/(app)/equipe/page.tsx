@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate } from '@/lib/utils'
 import type { Professional } from '@/types'
@@ -23,7 +23,7 @@ export default function EquipePage() {
 
   async function loadData() {
     if (!clinic) return
-    const supabase = createClient()
+    // supabase singleton
     const { data } = await supabase
       .from('professionals')
       .select('*')
@@ -36,7 +36,7 @@ export default function EquipePage() {
   async function handleSave() {
     if (!clinic || !form.name) return
     setSaving(true)
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('professionals').insert([{
       clinic_id: clinic.id,
       name: form.name,
@@ -51,7 +51,7 @@ export default function EquipePage() {
 
   async function handleDelete(id: string) {
     if (!confirm('Remover profissional?')) return
-    const supabase = createClient()
+    // supabase singleton
     await supabase.from('professionals').delete().eq('id', id)
     loadData()
   }
