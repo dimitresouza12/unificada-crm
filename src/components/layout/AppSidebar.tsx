@@ -62,12 +62,20 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
     >
       <div className={`${styles.brand} ${collapsed ? styles.brandCollapsed : ''}`}>
         <div className={styles.brandTop}>
-          {clinic.logo ? (
-            <img src={clinic.logo} alt={clinic.name} className={styles.logo} />
+          {collapsed ? (
+            clinic.logo
+              ? <img src={clinic.logo} alt={clinic.name} className={styles.logoIcon} />
+              : <span className={styles.logoText}><strong>M</strong></span>
           ) : (
-            <span className={styles.logoText}>
-              {collapsed ? <strong>M</strong> : <>My<strong>Clinica</strong></>}
-            </span>
+            <>
+              <span className={styles.logoText}>My<strong>Clinica</strong></span>
+              {clinic.logo && (
+                <>
+                  <span className={styles.logoDivider} />
+                  <img src={clinic.logo} alt={clinic.name} className={styles.logo} />
+                </>
+              )}
+            </>
           )}
         </div>
         {!collapsed && <span className={styles.clinicName}>{clinic.name}</span>}

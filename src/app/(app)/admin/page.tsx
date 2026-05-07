@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate } from '@/lib/utils'
@@ -12,7 +12,7 @@ interface NewClinic { name: string; slug: string; clinic_type: string; email: st
 const BLANK_CLINIC: NewClinic = { name: '', slug: '', clinic_type: 'odonto', email: '', phone: '', address: '' }
 
 export default function AdminPage() {
-  const { user } = useAuthStore()
+  const { user, clinic: myClinic, setClinicLogo } = useAuthStore()
   const [tab, setTab] = useState<AdminTab>('clinicas')
   const [clinics, setClinics] = useState<Clinic[]>([])
   const [users, setUsers] = useState<ClinicUser[]>([])
@@ -21,17 +21,18 @@ export default function AdminPage() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<NewClinic>(BLANK_CLINIC)
   const [saving, setSaving] = useState(false)
+  const [uploadingId, setUploadingId] = useState<string | null>(null)
+  const [uploadMsg, setUploadMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const pendingClinicRef = useRef<Clinic | null>(null)
 
   if (!user?.isSuperAdmin) {
     return <div className={styles.denied}>Acesso restrito a superadmins.</div>
   }
 
-  useEffect(() => {
-    loadAll()
-  }, [])
+  useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
-    // supabase singleton
     const [clinicsRes, usersRes, logsRes] = await Promise.all([
       supabase.from('clinics').select('*').order('created_at', { ascending: false }),
       supabase.from('clinic_users').select('*, clinics(name)').order('created_at', { ascending: false }).limit(100),
@@ -46,7 +47,6 @@ export default function AdminPage() {
   async function handleCreateClinic() {
     if (!form.name || !form.slug) return
     setSaving(true)
-    // supabase singleton
     await supabase.from('clinics').insert([form])
     setSaving(false)
     setShowModal(false)
@@ -55,8 +55,50 @@ export default function AdminPage() {
   }
 
   async function toggleClinic(id: string, active: boolean) {
-    // supabase singleton
     await supabase.from('clinics').update({ is_active: !active }).eq('id', id)
+    loadAll()
+  }
+
+  function triggerLogoUpload(clinic: Clinic) {
+    pendingClinicRef.current = clinic
+    fileInputRef.current?.click()
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    const clinic = pendingClinicRef.current
+    if (!file || !clinic) return
+    e.target.value = ''
+
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? 'png'
+    const path = `${clinic.id}/logo.${ext}`
+
+    setUploadingId(clinic.id)
+    setUploadMsg(null)
+
+    const { error: upErr } = await supabase.storage
+      .from('clinic-logos')
+      .upload(path, file, { upsert: true, contentType: file.type })
+
+    if (upErr) {
+      setUploadingId(null)
+      setUploadMsg({ id: clinic.id, ok: false, text: 'Erro no upload: ' + upErr.message })
+      return
+    }
+
+    const { data: urlData } = supabase.storage.from('clinic-logos').getPublicUrl(path)
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now()
+
+    const { error: dbErr } = await supabase.from('clinics').update({ logo_url: publicUrl }).eq('id', clinic.id)
+    setUploadingId(null)
+
+    if (dbErr) {
+      setUploadMsg({ id: clinic.id, ok: false, text: 'Erro ao salvar: ' + dbErr.message })
+      return
+    }
+
+    setUploadMsg({ id: clinic.id, ok: true, text: 'Logo atualizada!' })
+    if (myClinic?.id === clinic.id) setClinicLogo(publicUrl)
     loadAll()
   }
 
@@ -77,27 +119,37 @@ export default function AdminPage() {
 
       <div className={styles.tabs}>
         {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`}
-            onClick={() => setTab(t.key)}
-          >
+          <button key={t.key} className={`${styles.tab} ${tab === t.key ? styles.tabActive : ''}`} onClick={() => setTab(t.key)}>
             {t.label}
           </button>
         ))}
       </div>
+
+      {/* Hidden file input shared across all rows */}
+      <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        style={{ display: 'none' }} onChange={handleFileChange} />
 
       {loading ? <p className={styles.loading}>Carregando...</p> : (
         <>
           {tab === 'clinicas' && (
             <div className={styles.tableWrap}>
               <table className={styles.table}>
-                <thead><tr><th>Nome</th><th>Slug</th><th>Tipo</th><th>Plano</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+                <thead>
+                  <tr><th>Logo</th><th>Nome</th><th>Slug</th><th>Tipo</th><th>Plano</th><th>Status</th><th>Criado em</th><th>Ações</th></tr>
+                </thead>
                 <tbody>
                   {clinics.length === 0 ? (
-                    <tr><td colSpan={7} className={styles.empty}>Nenhuma clínica.</td></tr>
+                    <tr><td colSpan={8} className={styles.empty}>Nenhuma clínica.</td></tr>
                   ) : clinics.map((c) => (
                     <tr key={c.id}>
+                      <td>
+                        <div className={styles.logoCell}>
+                          {c.logo_url
+                            ? <img src={c.logo_url} alt={c.name} className={styles.logoThumb} />
+                            : <div className={styles.logoPlaceholder}>?</div>
+                          }
+                        </div>
+                      </td>
                       <td className={styles.bold}>{c.name}</td>
                       <td><code className={styles.code}>{c.slug}</code></td>
                       <td>{c.clinic_type}</td>
@@ -105,9 +157,22 @@ export default function AdminPage() {
                       <td><span className={`status-badge ${c.is_active ? 'status-concluido' : 'status-cancelado'}`}>{c.is_active ? 'Ativa' : 'Inativa'}</span></td>
                       <td>{formatDate(c.created_at, true)}</td>
                       <td>
-                        <button className={c.is_active ? styles.btnDeactivate : styles.btnActivate} onClick={() => toggleClinic(c.id, c.is_active)}>
-                          {c.is_active ? 'Desativar' : 'Ativar'}
-                        </button>
+                        <div className={styles.actions}>
+                          <button
+                            className={styles.btnUploadLogo}
+                            onClick={() => triggerLogoUpload(c)}
+                            disabled={uploadingId === c.id}
+                            title="Fazer upload da logo"
+                          >
+                            {uploadingId === c.id ? '...' : '↑ Logo'}
+                          </button>
+                          <button className={c.is_active ? styles.btnDeactivate : styles.btnActivate} onClick={() => toggleClinic(c.id, c.is_active)}>
+                            {c.is_active ? 'Desativar' : 'Ativar'}
+                          </button>
+                        </div>
+                        {uploadMsg?.id === c.id && (
+                          <p className={uploadMsg.ok ? styles.msgOk : styles.msgErr}>{uploadMsg.text}</p>
+                        )}
                       </td>
                     </tr>
                   ))}

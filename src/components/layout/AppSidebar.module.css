@@ -50,10 +50,25 @@
 }
 
 .logo {
-  height: 32px;
+  height: 28px;
   width: auto;
+  max-width: 80px;
   object-fit: contain;
   border-radius: 6px;
+}
+
+.logoIcon {
+  height: 32px;
+  width: 32px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.logoDivider {
+  width: 1px;
+  height: 20px;
+  background: var(--sidebar-border);
+  flex-shrink: 0;
 }
 
 .logoText {

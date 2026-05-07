@@ -10,6 +10,7 @@ interface AuthState {
   setSession: (clinic: AuthClinic, user: AuthUser) => void
   clearSession: () => void
   setHydrated: () => void
+  setClinicLogo: (logo: string) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -21,6 +22,7 @@ export const useAuthStore = create<AuthState>()(
       setSession: (clinic, user) => set({ clinic, user }),
       clearSession: () => set({ clinic: null, user: null }),
       setHydrated: () => set({ _hydrated: true }),
+      setClinicLogo: (logo) => set((s) => s.clinic ? { clinic: { ...s.clinic, logo } } : {}),
     }),
     {
       name: 'myclinica-auth',
