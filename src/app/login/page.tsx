@@ -10,8 +10,17 @@ const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 type Mode = 'login' | 'register'
 
+const CLINIC_TYPES = [
+  { value: 'odonto',   label: 'Odontologia',  emoji: '🦷' },
+  { value: 'medico',   label: 'Medicina',     emoji: '🩺' },
+  { value: 'estetica', label: 'Estética',     emoji: '✨' },
+  { value: 'vet',      label: 'Veterinária',  emoji: '🐾' },
+] as const
+
+type ClinicTypeValue = typeof CLINIC_TYPES[number]['value']
+
 interface RegisterForm {
-  name: string; phone: string; email: string; password: string; cpf: string; clinic_id: string
+  name: string; phone: string; email: string; password: string; cpf: string; clinic_id: string; clinic_type: ClinicTypeValue | ''
 }
 
 export default function LoginPage() {
@@ -26,7 +35,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   // Register state
-  const [reg, setReg] = useState<RegisterForm>({ name: '', phone: '', email: '', password: '', cpf: '', clinic_id: '' })
+  const [reg, setReg] = useState<RegisterForm>({ name: '', phone: '', email: '', password: '', cpf: '', clinic_id: '', clinic_type: '' })
   const [clinics, setClinics] = useState<{ id: string; name: string }[]>([])
   const [regError, setRegError] = useState('')
   const [regSuccess, setRegSuccess] = useState(false)
@@ -105,11 +114,13 @@ export default function LoginPage() {
     }
   }
 
-  async function loadClinics() {
-    const { data } = await supabase.from('clinics').select('id, name').eq('is_active', true).order('name')
+  async function loadClinics(type?: ClinicTypeValue) {
+    let q = supabase.from('clinics').select('id, name').eq('is_active', true).order('name')
+    if (type) q = q.eq('clinic_type', type)
+    const { data } = await q
     if (data) {
       setClinics(data)
-      if (data.length === 1) setReg(p => ({ ...p, clinic_id: data[0].id }))
+      setReg(p => ({ ...p, clinic_id: data.length === 1 ? data[0].id : '' }))
     }
   }
 
@@ -117,7 +128,12 @@ export default function LoginPage() {
     setMode('register')
     setRegError('')
     setRegSuccess(false)
-    if (clinics.length === 0) loadClinics()
+    setClinics([])
+  }
+
+  function selectClinicType(type: ClinicTypeValue) {
+    setReg(p => ({ ...p, clinic_type: type, clinic_id: '' }))
+    loadClinics(type)
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -126,6 +142,7 @@ export default function LoginPage() {
     if (!reg.name.trim()) return setRegError('Nome é obrigatório.')
     if (!reg.email.trim()) return setRegError('E-mail é obrigatório.')
     if (!reg.password || reg.password.length < 6) return setRegError('Senha deve ter pelo menos 6 caracteres.')
+    if (!reg.clinic_type) return setRegError('Selecione o tipo de clínica.')
     if (!reg.clinic_id) return setRegError('Selecione uma clínica.')
     setRegLoading(true)
 
@@ -218,7 +235,24 @@ export default function LoginPage() {
           </div>
         ) : (
           <form onSubmit={handleRegister} className={styles.form}>
-            {clinics.length > 1 && (
+            <div className={styles.field}>
+              <label>Tipo de clínica *</label>
+              <div className={styles.typeGrid}>
+                {CLINIC_TYPES.map(t => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    className={`${styles.typeCard} ${reg.clinic_type === t.value ? styles.typeCardActive : ''}`}
+                    onClick={() => selectClinicType(t.value)}
+                  >
+                    <span className={styles.typeEmoji}>{t.emoji}</span>
+                    <span className={styles.typeLabel}>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {reg.clinic_type && clinics.length > 1 && (
               <div className={styles.field}>
                 <label>Clínica</label>
                 <select value={reg.clinic_id} onChange={e => setReg(p => ({ ...p, clinic_id: e.target.value }))} required>
@@ -226,6 +260,9 @@ export default function LoginPage() {
                   {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
+            )}
+            {reg.clinic_type && clinics.length === 0 && (
+              <p className={styles.regNote}>Nenhuma clínica cadastrada para este tipo.</p>
             )}
             <div className={styles.field}>
               <label>Nome completo *</label>
