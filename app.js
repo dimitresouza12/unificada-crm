@@ -165,47 +165,26 @@ let allAppointments = [];
 let allProfessionals = [];
 
 async function fetchPatients() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return;
+
+    const clinicId = sessionStorage.getItem('clinic_id');
+    if (!clinicId) {
+        console.warn('Clinic ID missing in session. Waiting for auth context...');
+        return;
+    }
+
     try {
-        // Buscar pacientes da clínica logada (RLS filtra automaticamente)
-        const { data: patientsData, error: pError } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('patients')
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (pError) throw pError;
-
-        // Buscar agendamentos com dados do paciente
-        const { data: apptData, error: aError } = await supabaseClient
-            .from('appointments')
-            .select('*, patients(name, phone)')
-            .order('scheduled_at', { ascending: false });
-
-        if (aError) throw aError;
-
-        allPatients = patientsData || [];
-        allAppointments = apptData || [];
-        renderTable(allPatients);
-        
-        // Subscribe to real-time changes
-        supabaseClient
-            .channel('public:patients')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'patients' }, () => fetchPatients())
-            .subscribe();
-
-        supabaseClient
-            .channel('public:appointments')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => fetchPatients())
-            .subscribe();
-
+        if (error) throw error;
+        allPatients = data || [];
+        applyFilters();
     } catch (err) {
-        console.error('Error fetching data:', err.message);
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="5" class="loading-state" style="color: #B91C1C;">
-                    Erro ao buscar dados: ${err.message}. Verifique a sua conexão e a estrutura da tabela.
-                </td>
-            </tr>
-        `;
+        console.error('Error fetching patients:', err);
     }
 }
 
@@ -1060,288 +1039,127 @@ navLinks.forEach(link => {
     });
 });
 
-// --- ADMIN DASHBOARD LOGIC ---
-async function fetchSuperAdmins() {
-    const tableBody = document.getElementById('tableBodyAdminSuperUsers');
-    if (!tableBody) return;
+// --- Lógica do Painel Admin SaaS ---
 
-    try {
-        const { data: users, error } = await supabaseClient
-            .from('clinic_users')
-            .select('*')
-            .eq('is_superadmin', true);
-
-        if (error) throw error;
-
-        if (users.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="loading-state">Nenhum super admin cadastrado.</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = users.map(user => `
-            <tr>
-                <td>${user.display_name}</td>
-                <td>@${user.username}</td>
-                <td>${user.email || '-'}</td>
-                <td class="col-actions">
-                    <button class="btn-action" style="background:#EF4444" onclick="revokeSuperAdmin('${user.id}')">
-                        <i class="ph ph-shield-slash"></i> Revogar
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-
-    } catch (err) {
-        console.error('Error fetching super admins:', err);
-        tableBody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:red">Erro: ${err.message}</td></tr>`;
+// Admin Sub-tab switching
+document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.admin-tab-btn');
+    if (btn) {
+        document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
+        
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-admin-tab');
+        const targetContent = document.getElementById(targetId);
+        if (targetContent) targetContent.classList.remove('hidden');
+        
+        // Refresh data based on tab
+        if (targetId === 'adminClinicas') fetchAdminData();
+        if (targetId === 'adminUsuarios') fetchAdminUsers();
+        if (targetId === 'adminLogs') fetchAdminLogs();
     }
-}
-
-async function revokeSuperAdmin(userId) {
-    if (!confirm('Tem certeza que deseja revogar o acesso de Super Admin deste usuário?')) return;
-
-    try {
-        const { error } = await supabaseClient
-            .from('clinic_users')
-            .update({ is_superadmin: false })
-            .eq('id', userId);
-
-        if (error) throw error;
-        showToast('Acesso revogado com sucesso!');
-        fetchSuperAdmins();
-    } catch (err) {
-        alert('Erro ao revogar acesso: ' + err.message);
-    }
-}
-async function showPromoteAdminModal() {
-    const username = prompt('Digite o @username do usuário que deseja promover a Super Admin:');
-    if (!username) return;
-
-    const cleanUsername = username.replace('@', '').trim();
-
-    try {
-        const { data: user, error: fetchError } = await supabaseClient
-            .from('clinic_users')
-            .select('id, display_name')
-            .eq('username', cleanUsername)
-            .single();
-
-        if (fetchError || !user) throw new Error('Usuário não encontrado.');
-
-        if (!confirm(`Deseja promover "${user.display_name}" (@${cleanUsername}) a Super Admin?`)) return;
-
-        const { error: updateError } = await supabaseClient
-            .from('clinic_users')
-            .update({ is_superadmin: true })
-            .eq('id', user.id);
-
-        if (updateError) throw updateError;
-
-        showToast('Usuário promovido com sucesso!');
-        fetchSuperAdmins();
-    } catch (err) {
-        alert('Erro: ' + err.message);
-    }
-}
-async function fetchAdminData() {
-    if (!CLINIC.isSuperAdmin) return;
-
-    const tableBody = document.getElementById('tableBodyAdminClinics');
-    if (tableBody) tableBody.innerHTML = '<tr><td colspan="6" class="loading-state">Carregando métricas...</td></tr>';
-
-    try {
-        // 1. Fetch all clinics
-        const { data: clinics, error: cError } = await supabaseClient
-            .from('clinics')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        if (cError) throw cError;
-
-        // 2. Fetch aggregate metrics
-        const { count: totalPatients } = await supabaseClient.from('patients').select('*', { count: 'exact', head: true });
-        const { count: totalAppointments } = await supabaseClient.from('appointments').select('*', { count: 'exact', head: true });
-
-        // Calculate MRR (simple sum of plan-based revenue)
-        let totalMRR = 0;
-        clinics.forEach(c => {
-            if (c.plan === 'basico') totalMRR += 199;
-            else if (c.plan === 'premium') totalMRR += 499;
-            else if (c.plan === 'enterprise') totalMRR += 999;
-        });
-
-        // Update UI
-        if (document.getElementById('adminTotalMRR')) document.getElementById('adminTotalMRR').textContent = formatCurrency(totalMRR);
-        if (document.getElementById('adminTotalClinics')) document.getElementById('adminTotalClinics').textContent = clinics.length;
-        if (document.getElementById('adminTotalPatients')) document.getElementById('adminTotalPatients').textContent = totalPatients || 0;
-        if (document.getElementById('adminTotalAppointments')) document.getElementById('adminTotalAppointments').textContent = totalAppointments || 0;
-
-        renderAdminClinics(clinics);
-        fetchAdminLogs();
-        fetchSuperAdmins(); // New function
-        renderAdminCharts(clinics);
-
-    } catch (err) {
-        console.error('Error fetching admin data:', err);
-        if (tableBody) tableBody.innerHTML = `<tr><td colspan="6" class="loading-state" style="color:red">Erro: ${err.message}</td></tr>`;
-    }
-}
+});
 
 async function handleNewClinic(e) {
     e.preventDefault();
-    const btn = document.getElementById('btnSaveClinic');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="ph ph-spinner ph-spin"></i> Criando...';
+    const btnSubmit = e.target.querySelector('button[type="submit"]');
+    const originalText = btnSubmit.textContent;
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Provisionando...';
 
-    const clinicData = {
-        name: document.getElementById('clinicName').value,
-        slug: document.getElementById('clinicSlug').value,
-        clinic_type: document.getElementById('clinicType').value,
-        plan: document.getElementById('clinicPlan').value
-    };
-
-    const userData = {
-        name: document.getElementById('adminUserName').value,
-        username: document.getElementById('adminUserLogin').value,
-        email: document.getElementById('adminUserEmail').value,
-        pass: document.getElementById('adminUserPass').value
-    };
+    const name = document.getElementById('adminNewClinicName').value;
+    const type = document.getElementById('adminNewClinicType').value;
+    const email = document.getElementById('adminNewClinicEmail').value;
+    const password = document.getElementById('adminNewClinicPassword').value;
+    const plan = document.getElementById('adminNewClinicPlan').value;
+    
+    // Gerar slug amigável
+    const slug = name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
     try {
-        // 1. Criar Auth User
+        // 1. Criar Usuário no Auth
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-            email: userData.email,
-            password: userData.pass,
-            options: { data: { full_name: userData.name } }
+            email,
+            password,
+            options: { data: { full_name: `Admin ${name}` } }
         });
 
         if (authError) throw authError;
 
-        // 2. Criar Clínica
-        const { data: newClinic, error: clinicError } = await supabaseClient
+        // 2. Criar a Clínica
+        const { data: clinic, error: clinicError } = await supabaseClient
             .from('clinics')
-            .insert(clinicData)
+            .insert({ 
+                name, 
+                slug,
+                clinic_type: type, 
+                plan: plan,
+                is_active: true 
+            })
             .select()
             .single();
 
         if (clinicError) throw clinicError;
 
-        // 3. Criar Clinic User (Administrador da Clínica)
-        const { error: userError } = await supabaseClient
+        // 3. Vincular usuário à clínica com perfil completo
+        const { error: userLinkError } = await supabaseClient
             .from('clinic_users')
             .insert({
-                clinic_id: newClinic.id,
+                clinic_id: clinic.id,
                 user_id: authData.user.id,
                 role: 'admin',
-                display_name: userData.name,
-                username: userData.username,
-                email: userData.email
+                display_name: `Admin ${name}`,
+                username: email.split('@')[0], // Username inicial baseado no email
+                email: email,
+                is_active: true
             });
 
-        if (userError) throw userError;
+        if (userLinkError) throw userLinkError;
 
-        // 4. Log de Auditoria
-        await logAudit(null, 'ADMIN', 'CLINIC_CREATED', { clinic_name: clinicData.name });
+        // 4. Log audit
+        await logAudit(null, 'ADMIN', 'CLINIC_PROVISIONED', { clinic_name: name, type, plan });
 
-        alert('Clínica e usuário administrador criados com sucesso!');
-        document.getElementById('modalNewClinic').style.display = 'none';
-        document.getElementById('formNewClinic').reset();
+        alert('Clínica e Usuário provisionados com sucesso!');
+        closeModal('modalNovaClinica');
+        e.target.reset();
         fetchAdminData();
-
     } catch (err) {
-        console.error('Erro ao criar clínica:', err);
-        alert('Erro ao criar clínica: ' + err.message);
+        console.error('Erro ao provisionar:', err);
+        alert('Erro: ' + (err.message || err.details || 'Falha desconhecida'));
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = 'Criar Clínica';
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = originalText;
     }
 }
 
-async function fetchAdminLogs() {
-    const tableBody = document.getElementById('tableBodyAdminLogs');
-    if (!tableBody) return;
+document.getElementById('formNovaClinica')?.addEventListener('submit', handleNewClinic);
 
-    const { data: logs } = await supabaseClient
-        .from('audit_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-    if (!logs || logs.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="3" class="loading-state">Nenhum log encontrado.</td></tr>';
-        return;
-    }
-
-    tableBody.innerHTML = logs.map(log => `
-        <tr>
-            <td style="font-size: 0.75rem;">${formatDate(log.created_at)}</td>
-            <td>${log.details?.clinic_name || 'Sistema'}</td>
-            <td><strong>${log.action}</strong></td>
-        </tr>
-    `).join('');
-}
-
-let adminChart = null;
-function renderAdminCharts(clinics) {
-    const ctx = document.getElementById('adminGrowthChart');
-    if (!ctx) return;
-
-    if (adminChart) adminChart.destroy();
-
-    // Dados fictícios para demonstração de crescimento por mês
-    // Num app real, buscaríamos contagens agrupadas por mês do banco
-    const labels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
-    const clinicCount = labels.map((_, i) => clinics.length - (5 - i));
-    const mrrData = labels.map((_, i) => (clinics.length * 200) - ((5 - i) * 150));
-
-    adminChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Clínicas',
-                    data: clinicCount,
-                    borderColor: '#7C3AED',
-                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
-                    fill: true,
-                    tension: 0.4
-                },
-                {
-                    label: 'MRR (R$)',
-                    data: mrrData,
-                    borderColor: '#10B981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } },
-            scales: {
-                y: { beginAtZero: true, title: { display: true, text: 'Clínicas' } },
-                y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Receita (R$)' } }
-            }
-        }
-    });
-}
-
-async function logAudit(clinicId, module, action, details = {}) {
+async function fetchAdminData() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        await supabaseClient.from('audit_logs').insert({
-            clinic_id: clinicId,
-            user_id: user?.id,
-            module: module,
-            action: action,
-            details: details
-        });
+        const { data: clinics, error } = await supabaseClient
+            .from('clinics')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const { count: patientsCount } = await supabaseClient
+            .from('patients')
+            .select('*', { count: 'exact', head: true });
+
+        const { count: activeCount } = await supabaseClient
+            .from('clinics')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true);
+
+        // Update Stats
+        if (document.getElementById('adminTotalClinicsStat')) document.getElementById('adminTotalClinicsStat').textContent = clinics.length;
+        if (document.getElementById('adminClinicasAtivas')) document.getElementById('adminClinicasAtivas').textContent = activeCount || clinics.filter(c => c.is_active).length;
+        if (document.getElementById('adminTotalPatientsStat')) document.getElementById('adminTotalPatientsStat').textContent = patientsCount || 0;
+
+        renderAdminClinics(clinics);
     } catch (err) {
-        console.warn('Audit Log failed:', err);
+        console.error('Error fetching admin data:', err);
     }
 }
 
@@ -1358,21 +1176,77 @@ function renderAdminClinics(clinics) {
         <tr>
             <td>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <img src="${c.logo_url || 'logo.png'}" style="width:24px; height:24px; border-radius:4px; object-fit:cover;">
+                    <div style="width:32px; height:32px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; border-radius:8px; font-weight:600;">
+                        ${c.name.charAt(0)}
+                    </div>
                     <strong>${c.name}</strong>
                 </div>
             </td>
-            <td>${c.clinic_type}</td>
-            <td><span class="plan-badge plan-${c.plan}">${c.plan}</span></td>
-            <td><span class="status-badge ${c.is_active ? 'status-concluido' : 'status-cancelado'}">${c.is_active ? 'Ativo' : 'Inativo'}</span></td>
+            <td><span class="badge badge-info">${c.clinic_type || 'N/A'}</span></td>
+            <td><span class="badge badge-neutral">${c.plan || 'free'}</span></td>
+            <td><span class="badge ${c.is_active ? 'badge-success' : 'badge-warning'}">${c.is_active ? 'Ativo' : 'Inativo'}</span></td>
             <td>${new Date(c.created_at).toLocaleDateString('pt-BR')}</td>
             <td>
-                <button class="btn-action edit-patient" onclick="alert('Funcionalidade em desenvolvimento: Editar Clínica')">
-                    <i class="ph ph-pencil"></i>
+                <button class="btn-action" onclick="alert('Editar clínica: ${c.id}')" title="Configurar Clínica">
+                    <i class="ph ph-gear"></i>
                 </button>
             </td>
         </tr>
     `).join('');
+}
+
+async function fetchAdminUsers() {
+    const tableBody = document.getElementById('tableBodyAdminUsers');
+    if (!tableBody) return;
+    try {
+        const { data: users, error } = await supabaseClient
+            .from('clinic_users')
+            .select(`
+                *,
+                clinics (name)
+            `)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        tableBody.innerHTML = users.map(u => `
+            <tr>
+                <td><strong>${u.user_id.substring(0,8)}...</strong></td>
+                <td>${u.clinics?.name || '<span class="badge badge-warning">Sem Clínica</span>'}</td>
+                <td><span class="badge ${u.role === 'admin' ? 'badge-info' : 'badge-neutral'}">${u.role}</span></td>
+                <td>${u.last_login ? new Date(u.last_login).toLocaleString() : 'N/A'}</td>
+                <td><span class="badge ${u.is_active ? 'badge-success' : 'badge-warning'}">${u.is_active ? 'Ativo' : 'Pendente'}</span></td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5">Erro ao carregar usuários: ${err.message}</td></tr>`;
+    }
+}
+
+async function fetchAdminLogs() {
+    const tableBody = document.getElementById('tableBodyAdminLogs');
+    if (!tableBody) return;
+    try {
+        const { data: logs, error } = await supabaseClient
+            .from('audit_logs')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) throw error;
+
+        tableBody.innerHTML = logs.map(l => `
+            <tr>
+                <td style="font-size: 0.8rem;">${new Date(l.created_at).toLocaleString()}</td>
+                <td><span class="badge badge-info">${l.action}</span></td>
+                <td>${l.module}</td>
+                <td>${l.user_id?.substring(0,8) || 'Sistema'}</td>
+                <td style="font-family: monospace; font-size: 0.8rem;">${l.details?.ip || 'N/A'}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tableBody.innerHTML = `<tr><td colspan="5">Erro ao carregar logs: ${err.message}</td></tr>`;
+    }
 }
 
 // --- DASHBOARD ---

@@ -284,91 +284,55 @@
             <!-- VIEW ADMIN (SaaS Dashboard) -->
             <div id="viewAdmin" class="view-section">
                 <div class="page-header">
-                    <h2>Painel do Administrador (SaaS)</h2>
-                    <div class="header-actions">
-                        <button class="btn btn-primary" id="btnNewClinicAdmin">
-                            <i class="ph ph-plus"></i> Nova Clínica
+                    <div>
+                        <h2><i class="ph ph-shield-check" style="margin-right: 8px;"></i>Painel Administrativo SaaS</h2>
+                        <p class="text-muted">Gerencie inquilinos, usuários e monitoramento do sistema.</p>
+                    </div>
+                </div>
+
+                <!-- Admin Sub-tabs -->
+                <div class="admin-tabs-container">
+                    <div class="admin-tabs">
+                        <button class="admin-tab-btn active" data-admin-tab="adminClinicas">
+                            <i class="ph ph-buildings"></i> Clínicas
+                        </button>
+                        <button class="admin-tab-btn" data-admin-tab="adminUsuarios">
+                            <i class="ph ph-users-three"></i> Usuários Globais
+                        </button>
+                        <button class="admin-tab-btn" data-admin-tab="adminLogs">
+                            <i class="ph ph-scroll"></i> Logs do Sistema
                         </button>
                     </div>
                 </div>
 
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: #ECFDF5; color: #10B981;">
-                            <i class="ph ph-trend-up"></i>
+                <div id="adminClinicas" class="admin-tab-content active">
+                    <div class="admin-actions-bar">
+                        <div class="search-box">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="searchAdminClinicas" placeholder="Buscar clínica por nome ou ID...">
                         </div>
-                        <div class="metric-info">
-                            <span class="label">Receita Total (MRR)</span>
-                            <h4 id="adminTotalMRR">R$ 0,00</h4>
-                        </div>
+                        <button class="btn btn-primary" onclick="openModal('modalNovaClinica')">
+                            <i class="ph ph-plus"></i> Nova Clínica
+                        </button>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: #EFF6FF; color: #3B82F6;">
-                            <i class="ph ph-buildings"></i>
-                        </div>
-                        <div class="metric-info">
-                            <span class="label">Clínicas Ativas</span>
-                            <h4 id="adminTotalClinics">0</h4>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: #FFF7ED; color: #F59E0B;">
-                            <i class="ph ph-users-three"></i>
-                        </div>
-                        <div class="metric-info">
-                            <span class="label">Pacientes Totais</span>
-                            <h4 id="adminTotalPatients">0</h4>
-                        </div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: #F5F3FF; color: #8B5CF6;">
-                            <i class="ph ph-chart-line-up"></i>
-                        </div>
-                        <div class="metric-info">
-                            <span class="label">Agendamentos</span>
-                            <h4 id="adminTotalAppointments">0</h4>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="admin-sections" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
-                    <div class="admin-card">
-                        <div class="card-header">
-                            <h4>Crescimento (MRR & Clínicas)</h4>
+                    <div class="admin-stats-grid">
+                        <div class="admin-stat-card">
+                            <span class="stat-label">Total de Clínicas</span>
+                            <span id="adminTotalClinicsStat" class="stat-value">0</span>
                         </div>
-                        <div class="chart-container" style="height: 300px; position: relative;">
-                            <canvas id="adminGrowthChart"></canvas>
+                        <div class="admin-stat-card">
+                            <span class="stat-label">Ativas</span>
+                            <span id="adminClinicasAtivas" class="stat-value">0</span>
                         </div>
-                    </div>
-                    <div class="admin-card">
-                        <div class="card-header">
-                            <h4>Logs de Auditoria Recentes</h4>
-                        </div>
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                            <table class="table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Usuário</th>
-                                        <th>Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableBodyAdminLogs">
-                                    <!-- Dinâmico -->
-                                </tbody>
-                            </table>
+                        <div class="admin-stat-card">
+                            <span class="stat-label">Pacientes Totais</span>
+                            <span id="adminTotalPatientsStat" class="stat-value">0</span>
                         </div>
                     </div>
-                </div>
 
-                </div>
-
-                <div class="table-card" style="margin-top: 2rem;">
-                    <div class="table-header">
-                        <h3>Gestão de Clínicas</h3>
-                    </div>
-                    <div class="table-container">
-                        <table id="tableAdminClinics">
+                    <div class="table-card">
+                        <table id="tableAdminClinicas">
                             <thead>
                                 <tr>
                                     <th>Clínica</th>
@@ -379,25 +343,62 @@
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="tableBodyAdminClinics">
-                                <!-- Dinâmico -->
+                            <tbody id="tableBodyAdminClinicas">
+                                <tr><td colspan="6" class="loading-state">Carregando clínicas...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="table-card" style="margin-top: 2rem;">
-                    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3>Gestão de Usuários Super Admin</h3>
-                        <button class="btn btn-primary btn-sm" onclick="showPromoteAdminModal()">
-                            <i class="ph ph-shield-plus"></i> Novo Super Admin
-                        </button>
+                <div id="adminUsuarios" class="admin-tab-content hidden">
+                    <div class="admin-actions-bar">
+                        <div class="search-box">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="searchAdminUsers" placeholder="Buscar usuário por e-mail...">
+                        </div>
                     </div>
-                    <div class="table-container">
-                        <table id="tableAdminSuperUsers">
+                    <div class="table-card">
+                        <table id="tableAdminUsers">
                             <thead>
                                 <tr>
-                                    <th>Nome</th>
+                                    <th>Usuário</th>
+                                    <th>Clínica</th>
+                                    <th>Role</th>
+                                    <th>Último Login</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyAdminUsers">
+                                <tr><td colspan="5" class="loading-state">Carregando usuários...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="adminLogs" class="admin-tab-content hidden">
+                    <div class="admin-actions-bar">
+                        <button class="btn btn-secondary btn-sm" id="btnRefreshLogs">
+                            <i class="ph ph-arrows-clockwise"></i> Atualizar Logs
+                        </button>
+                    </div>
+                    <div class="table-card">
+                        <table id="tableAdminLogs">
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Ação</th>
+                                    <th>Entidade</th>
+                                    <th>Usuário</th>
+                                    <th>IP</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyAdminLogs">
+                                <tr><td colspan="5" class="loading-state">Carregando logs...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
                                     <th>Username</th>
                                     <th>Email</th>
                                     <th>Ações</th>
@@ -708,6 +709,52 @@
                     </div>
                 </form>
             </div>
+        <!-- MODAL: NOVA CLÍNICA (SUPERADMIN) -->
+    <div id="modalNovaClinica" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Provisionar Nova Clínica</h3>
+                <span class="close" onclick="closeModal('modalNovaClinica')">&times;</span>
+            </div>
+            <form id="formNovaClinica">
+                <div class="form-group">
+                    <label>Nome da Clínica</label>
+                    <input type="text" id="adminNewClinicName" placeholder="Ex: Clínica Sorriso & Vida" required>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Especialidade</label>
+                    <select id="adminNewClinicType" required>
+                        <option value="odontologia">Odontologia</option>
+                        <option value="veterinaria">Veterinária</option>
+                        <option value="estetica">Estética & Bem-estar</option>
+                        <option value="psicologia">Psicologia</option>
+                        <option value="fisioterapia">Fisioterapia</option>
+                        <option value="medicina_geral">Medicina Geral</option>
+                        <option value="nutricao">Nutrição</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>E-mail Administrativo (Login)</label>
+                    <input type="email" id="adminNewClinicEmail" placeholder="admin@clinica.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha Provisória</label>
+                    <input type="password" id="adminNewClinicPassword" placeholder="No mínimo 6 caracteres" required>
+                </div>
+                <div class="form-group">
+                    <label>Plano Inicial</label>
+                    <select id="adminNewClinicPlan">
+                        <option value="free">Free Trial (15 dias)</option>
+                        <option value="basic">Plano Básico</option>
+                        <option value="pro">Plano Pro</option>
+                        <option value="enterprise">Plano Enterprise</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('modalNovaClinica')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Criar Clínica e Usuário</button>
+                </div>
+            </form>
         </div>
     </div>
     <!-- Modal Novo Lançamento Financeiro -->
