@@ -131,3 +131,85 @@
   text-align: center;
   font-weight: 500;
 }
+
+/* Mode tabs */
+.modeTabs {
+  display: flex;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+  margin-bottom: 1.5rem;
+}
+.modeTab {
+  flex: 1;
+  padding: 0.45rem 0.75rem;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font-size: 0.855rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.modeTabActive {
+  background: rgba(255,255,255,0.12);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+/* Select in dark card */
+.field select {
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: #FFFFFF;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+.field select option { background: #1a1f2e; color: #fff; }
+.field select:focus { border-color: rgba(159,103,255,0.6); }
+
+/* Registration helpers */
+.regNote {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Success state */
+.successBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  text-align: center;
+}
+.successIcon {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.15);
+  border: 2px solid rgba(16,185,129,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #10B981;
+}
+.successTitle { font-size: 1.1rem; font-weight: 700; color: #fff; }
+.successMsg { font-size: 0.82rem; color: rgba(255,255,255,0.5); line-height: 1.6; }
+.btnOutline {
+  padding: 0.65rem 1.5rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: none;
+  border-radius: 10px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 0.5rem;
+}
+.btnOutline:hover { background: rgba(255,255,255,0.08); color: #fff; }

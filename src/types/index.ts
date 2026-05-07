@@ -47,6 +47,8 @@ export interface Patient {
   occupation: string | null
   emergency_contact: string | null
   referred_by: string | null
+  registration_status: 'pending' | 'approved' | 'rejected' | null
+  self_registered: boolean | null
   // vet fields
   pet_name: string | null
   pet_species: string | null
@@ -106,14 +108,16 @@ export interface RecordEntry {
 export interface FinancialRecord {
   id: string
   clinic_id: string
-  patient_id: string
-  total_amount: number
-  discount_percent: number
+  patient_id: string | null
+  total_amount: number | null
+  discount_percent: number | null
   payment_method: string | null
-  installments: unknown[]
+  installments: unknown[] | null
   notes: string | null
   created_at: string
-  patients?: Pick<Patient, 'id' | 'name'>
+  type: 'receita' | 'despesa'
+  category: string | null
+  patients?: Pick<Patient, 'id' | 'name'> | null
 }
 
 export interface Professional {

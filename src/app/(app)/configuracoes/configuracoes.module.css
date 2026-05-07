@@ -1,4 +1,6 @@
-.page { display: flex; flex-direction: column; gap: 1.5rem; max-width: 620px; }
+.page { display: flex; flex-direction: column; gap: 1.5rem; max-width: 620px; animation: fadeUp .35s cubic-bezier(.22,1,.36,1) both; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.title { font-size: 1.55rem; font-weight: 750; color: var(--text-primary); letter-spacing: -0.4px; }
 .title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
 .card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--card-shadow); }
 .cardTitle { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1.25rem; }
@@ -19,3 +21,19 @@
 .infoLabel { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); min-width: 120px; }
 .infoValue { font-size: 0.875rem; color: var(--text-primary); }
 .mono { font-family: monospace; font-size: 0.78rem; background: var(--bg-tertiary); padding: 2px 6px; border-radius: 4px; }
+
+/* Google Calendar */
+.gcalHeader { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+.gcalDesc { font-size:0.82rem; color:var(--text-secondary); margin-top:0.2rem; line-height:1.5; }
+.gcalLogo { font-size:2rem; }
+.gcalWarning { background:#FFFBEB; border:1px solid #FDE68A; border-radius:var(--radius-md); padding:.75rem 1rem; font-size:.82rem; color:#92400E; line-height:1.6; }
+.gcalConnected { display:flex; align-items:center; gap:.75rem; padding:.75rem 1rem; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:var(--radius-md); font-size:.875rem; color:#065F46; font-weight:500; }
+.gcalDot { width:8px; height:8px; border-radius:50%; background:#10B981; flex-shrink:0; }
+.btnDisconnect { margin-left:auto; padding:.35rem .875rem; border:1px solid #A7F3D0; background:none; border-radius:var(--radius-md); font-size:.78rem; color:#065F46; cursor:pointer; transition:background .15s; }
+.btnDisconnect:hover { background:#D1FAE5; }
+.gcalConnect { display:flex; flex-direction:column; gap:.625rem; }
+.gcalError { font-size:.82rem; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:var(--radius-md); padding:.5rem .75rem; }
+.btnGConnect { padding:.65rem 1.25rem; background:linear-gradient(135deg,#4285F4,#5A9BFF); color:#fff; border:none; border-radius:var(--radius-md); font-size:.875rem; font-weight:600; cursor:pointer; transition:opacity .15s,transform .1s; align-self:flex-start; box-shadow:0 2px 8px rgba(66,133,244,.3); }
+.btnGConnect:hover:not(:disabled) { opacity:.9; transform:translateY(-1px); }
+.btnGConnect:disabled { opacity:.6; cursor:not-allowed; }
+.gcalHint { font-size:.75rem; color:var(--text-secondary); }

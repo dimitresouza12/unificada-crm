@@ -6,6 +6,13 @@
 .toggleBtn { padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 500; background: none; border: none; cursor: pointer; color: var(--text-secondary); transition: all 0.15s; }
 .toggleBtn:hover { background: var(--bg-secondary); }
 .toggleActive { background: var(--brand-primary) !important; color: #fff !important; }
+.gcalBanner { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.75rem 1rem; background:#EEF2FF; border:1px solid #C7D2FE; border-radius:var(--radius-md); font-size:.855rem; color:#3730A3; flex-wrap:wrap; }
+.gcalBannerBtn { padding:.35rem .875rem; background:#4F46E5; color:#fff; border:none; border-radius:var(--radius-md); font-size:.8rem; font-weight:600; cursor:pointer; white-space:nowrap; }
+.gcalBannerBtn:hover { opacity:.9; }
+.gcalStatus { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:#065F46; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:var(--radius-md); padding:.5rem .875rem; }
+.gcalDot { width:7px; height:7px; border-radius:50%; background:#10B981; flex-shrink:0; }
+.gcalErrorMsg { font-size:.82rem; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:var(--radius-md); padding:.5rem .875rem; }
+.gcalCheck { display:flex; align-items:center; gap:.5rem; font-size:.855rem; color:var(--text-primary); cursor:pointer; padding:.5rem .75rem; background:var(--bg-secondary); border-radius:var(--radius-md); }
 .calendarWrap { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--card-shadow); }
 .calLoading { padding: 3rem; text-align: center; color: var(--text-secondary); }
 .calHint { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 0.75rem; }

@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
+import { connectGoogleCalendar, disconnectGoogleCalendar, getGCalToken } from '@/lib/googleCalendar'
 import styles from './configuracoes.module.css'
 
 export default function ConfiguracoesPage() {
@@ -13,17 +14,45 @@ export default function ConfiguracoesPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  const [gcalConnected, setGcalConnected] = useState(false)
+  const [gcalLoading, setGcalLoading] = useState(false)
+  const [gcalError, setGcalError] = useState('')
+
+  useEffect(() => {
+    setGcalConnected(!!getGCalToken())
+  }, [])
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     if (!clinic) return
     setSaving(true)
-    // supabase singleton
     await supabase.from('clinics').update({ name, address, phone, primary_color: color }).eq('id', clinic.id)
     setSession({ ...clinic, name, address, phone, color }, user!)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
     setSaving(false)
   }
+
+  async function handleConnectGCal() {
+    setGcalError('')
+    setGcalLoading(true)
+    try {
+      await connectGoogleCalendar()
+      setGcalConnected(true)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setGcalError(msg)
+    } finally {
+      setGcalLoading(false)
+    }
+  }
+
+  function handleDisconnectGCal() {
+    disconnectGoogleCalendar()
+    setGcalConnected(false)
+  }
+
+  const hasClientId = !!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
   return (
     <div className={styles.page}>
@@ -58,6 +87,38 @@ export default function ConfiguracoesPage() {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* Google Calendar */}
+      <div className={styles.card}>
+        <div className={styles.gcalHeader}>
+          <div>
+            <h2 className={styles.cardTitle} style={{ marginBottom: '0.25rem' }}>Google Calendar</h2>
+            <p className={styles.gcalDesc}>Sincronize sua agenda com o Google Calendar para ver e criar eventos diretamente.</p>
+          </div>
+          <div className={styles.gcalLogo}>📅</div>
+        </div>
+
+        {!hasClientId ? (
+          <div className={styles.gcalWarning}>
+            <strong>⚠️ NEXT_PUBLIC_GOOGLE_CLIENT_ID não configurado.</strong><br />
+            Adicione o Client ID OAuth2 do Google nas variáveis de ambiente do EasyPanel para ativar esta integração.
+          </div>
+        ) : gcalConnected ? (
+          <div className={styles.gcalConnected}>
+            <span className={styles.gcalDot} />
+            <span>Conta Google conectada</span>
+            <button className={styles.btnDisconnect} onClick={handleDisconnectGCal}>Desconectar</button>
+          </div>
+        ) : (
+          <div className={styles.gcalConnect}>
+            {gcalError && <p className={styles.gcalError}>{gcalError}</p>}
+            <button className={styles.btnGConnect} onClick={handleConnectGCal} disabled={gcalLoading}>
+              {gcalLoading ? 'Conectando...' : 'Conectar Google Calendar'}
+            </button>
+            <p className={styles.gcalHint}>Você será redirecionado para autenticar sua conta Google.</p>
+          </div>
+        )}
       </div>
 
       <div className={styles.card}>

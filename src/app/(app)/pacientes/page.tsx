@@ -8,16 +8,18 @@ import { ProntuarioModal } from '@/components/prontuario/ProntuarioModal'
 import { PatientFormModal } from '@/components/pacientes/PatientFormModal'
 import styles from './pacientes.module.css'
 
-type ActiveTab = 'atendimentos' | 'pacientes'
+type ActiveTab = 'atendimentos' | 'pacientes' | 'pendentes'
 
 export default function PacientesPage() {
   const { clinic } = useAuthStore()
   const [tab, setTab] = useState<ActiveTab>('atendimentos')
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [patients, setPatients] = useState<Patient[]>([])
+  const [pendingPatients, setPendingPatients] = useState<Patient[]>([])
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [loading, setLoading] = useState(true)
+  const [approving, setApproving] = useState<string | null>(null)
 
   const [prontuarioPatient, setProntuarioPatient] = useState<Patient | null>(null)
   const [editPatient, setEditPatient] = useState<Patient | null>(null)
@@ -29,23 +31,29 @@ export default function PacientesPage() {
 
   async function loadData() {
     if (!clinic) return
-    // supabase singleton
-    const [apptRes, patRes] = await Promise.all([
-      supabase
-        .from('appointments')
-        .select('*, patients(id, name, phone)')
-        .eq('clinic_id', clinic.id)
-        .order('scheduled_at', { ascending: false }),
-      supabase
-        .from('patients')
-        .select('*')
-        .eq('clinic_id', clinic.id)
-        .eq('is_active', true)
-        .order('name'),
+    const [apptRes, patRes, pendingRes] = await Promise.all([
+      supabase.from('appointments').select('*, patients(id, name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }),
+      supabase.from('patients').select('*').eq('clinic_id', clinic.id).eq('is_active', true).order('name'),
+      supabase.from('patients').select('*').eq('clinic_id', clinic.id).eq('registration_status', 'pending').order('created_at', { ascending: false }),
     ])
     setAppointments((apptRes.data ?? []) as Appointment[])
     setPatients((patRes.data ?? []) as Patient[])
+    setPendingPatients((pendingRes.data ?? []) as Patient[])
     setLoading(false)
+  }
+
+  async function approvePatient(id: string) {
+    setApproving(id)
+    await supabase.from('patients').update({ is_active: true, registration_status: 'approved' }).eq('id', id)
+    setApproving(null)
+    loadData()
+  }
+
+  async function rejectPatient(id: string) {
+    setApproving(id)
+    await supabase.from('patients').update({ registration_status: 'rejected' }).eq('id', id)
+    setApproving(null)
+    loadData()
   }
 
   const filteredAppointments = useMemo(() => {
@@ -93,17 +101,15 @@ export default function PacientesPage() {
 
       <div className={styles.toolbar}>
         <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${tab === 'atendimentos' ? styles.tabActive : ''}`}
-            onClick={() => setTab('atendimentos')}
-          >
+          <button className={`${styles.tab} ${tab === 'atendimentos' ? styles.tabActive : ''}`} onClick={() => setTab('atendimentos')}>
             Atendimentos
           </button>
-          <button
-            className={`${styles.tab} ${tab === 'pacientes' ? styles.tabActive : ''}`}
-            onClick={() => setTab('pacientes')}
-          >
+          <button className={`${styles.tab} ${tab === 'pacientes' ? styles.tabActive : ''}`} onClick={() => setTab('pacientes')}>
             Pacientes
+          </button>
+          <button className={`${styles.tab} ${tab === 'pendentes' ? styles.tabActive : ''}`} onClick={() => setTab('pendentes')}>
+            Cadastros Pendentes
+            {pendingPatients.length > 0 && <span className={styles.badge}>{pendingPatients.length}</span>}
           </button>
         </div>
 
@@ -133,6 +139,37 @@ export default function PacientesPage() {
 
       {loading ? (
         <p className={styles.loading}>Carregando...</p>
+      ) : tab === 'pendentes' ? (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead><tr>
+              <th>Nome</th><th>Telefone</th><th>E-mail</th><th>CPF</th><th>Data</th><th>Ações</th>
+            </tr></thead>
+            <tbody>
+              {pendingPatients.length === 0 ? (
+                <tr><td colSpan={6} className={styles.empty}>Nenhum cadastro pendente.</td></tr>
+              ) : pendingPatients.map(p => (
+                <tr key={p.id}>
+                  <td className={styles.bold}>{p.name}</td>
+                  <td>{p.phone ?? '—'}</td>
+                  <td>{p.email ?? '—'}</td>
+                  <td>{p.cpf ?? '—'}</td>
+                  <td>{formatDate(p.created_at, true)}</td>
+                  <td>
+                    <div className={styles.actions}>
+                      <button className={styles.btnApprove} disabled={approving === p.id} onClick={() => approvePatient(p.id)}>
+                        {approving === p.id ? '...' : '✓ Aprovar'}
+                      </button>
+                      <button className={styles.btnReject} disabled={approving === p.id} onClick={() => rejectPatient(p.id)}>
+                        ✕ Rejeitar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : tab === 'atendimentos' ? (
         <div className={styles.tableWrap}>
           <table className={styles.table}>

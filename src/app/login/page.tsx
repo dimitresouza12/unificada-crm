@@ -8,13 +8,29 @@ import styles from './login.module.css'
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+type Mode = 'login' | 'register'
+
+interface RegisterForm {
+  name: string; phone: string; email: string; password: string; cpf: string; clinic_id: string
+}
+
 export default function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession)
+  const [mode, setMode] = useState<Mode>('login')
+
+  // Login state
   const [credential, setCredential] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [step, setStep] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Register state
+  const [reg, setReg] = useState<RegisterForm>({ name: '', phone: '', email: '', password: '', cpf: '', clinic_id: '' })
+  const [clinics, setClinics] = useState<{ id: string; name: string }[]>([])
+  const [regError, setRegError] = useState('')
+  const [regSuccess, setRegSuccess] = useState(false)
+  const [regLoading, setRegLoading] = useState(false)
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return (
@@ -22,15 +38,15 @@ export default function LoginPage() {
         <div className={styles.card}>
           <p className={styles.error}>
             ⚠️ Variáveis de ambiente não configuradas.<br />
-            NEXT_PUBLIC_SUPABASE_URL: {SUPABASE_URL ? '✓' : '✗ ausente'}<br />
-            NEXT_PUBLIC_SUPABASE_ANON_KEY: {SUPABASE_KEY ? '✓' : '✗ ausente'}
+            NEXT_PUBLIC_SUPABASE_URL: {SUPABASE_URL ? '✓' : '✗'}<br />
+            NEXT_PUBLIC_SUPABASE_ANON_KEY: {SUPABASE_KEY ? '✓' : '✗'}
           </p>
         </div>
       </div>
     )
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError('')
     setStep('')
@@ -38,65 +54,45 @@ export default function LoginPage() {
 
     try {
       let email = credential.trim()
-      console.log('[login] iniciando, credencial:', email.includes('@') ? 'email' : 'username')
+      console.log('[login] iniciando:', email.includes('@') ? 'email' : 'username')
 
       if (!email.includes('@')) {
         setStep('Buscando usuário...')
-        console.log('[login] buscando username:', email.toLowerCase())
         const { data: userData, error: lookupErr } = await supabase
-          .from('clinic_users')
-          .select('email')
-          .eq('username', email.toLowerCase())
-          .eq('is_active', true)
-          .maybeSingle()
-
-        console.log('[login] lookup resultado:', { userData, lookupErr })
+          .from('clinic_users').select('email')
+          .eq('username', email.toLowerCase()).eq('is_active', true).maybeSingle()
+        console.log('[login] lookup:', { userData, lookupErr })
         if (lookupErr) throw new Error('Erro de banco: ' + lookupErr.message)
         if (!userData?.email) throw new Error('Usuário "' + email + '" não encontrado.')
         email = userData.email
       }
 
       setStep('Verificando senha...')
-      console.log('[login] autenticando email:', email)
-      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      console.log('[login] auth resultado:', { user: authData?.user?.id, authErr })
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
+      console.log('[login] auth:', { user: authData?.user?.id, authErr })
       if (authErr) throw new Error(authErr.message)
 
       setStep('Carregando clínica...')
-      console.log('[login] buscando clinic_user para:', authData.user.id)
       const { data: clinicUser, error: cuErr } = await supabase
-        .from('clinic_users')
-        .select('*, clinics(*)')
-        .eq('user_id', authData.user.id)
-        .eq('is_active', true)
+        .from('clinic_users').select('*, clinics(*)')
+        .eq('user_id', authData.user.id).eq('is_active', true)
         .maybeSingle<ClinicUser & { clinics: Clinic }>()
-
-      console.log('[login] clinicUser resultado:', { clinicUser, cuErr })
+      console.log('[login] clinicUser:', { clinicUser, cuErr })
       if (cuErr) throw new Error('Erro RLS: ' + cuErr.message)
       if (!clinicUser) throw new Error('Usuário sem clínica associada. (user_id: ' + authData.user.id + ')')
-      if (!clinicUser.clinics) throw new Error('Dados da clínica não encontrados. (clinic_id: ' + clinicUser.clinic_id + ')')
+      if (!clinicUser.clinics) throw new Error('Dados da clínica não encontrados.')
 
       const clinic: AuthClinic = {
-        id: clinicUser.clinic_id,
-        name: clinicUser.clinics.name,
-        type: clinicUser.clinics.clinic_type,
-        logo: clinicUser.clinics.logo_url ?? '',
-        address: clinicUser.clinics.address ?? '',
-        phone: clinicUser.clinics.phone ?? '',
-        color: clinicUser.clinics.primary_color ?? '#7C3AED',
-        slug: clinicUser.clinics.slug,
+        id: clinicUser.clinic_id, name: clinicUser.clinics.name,
+        type: clinicUser.clinics.clinic_type, logo: clinicUser.clinics.logo_url ?? '',
+        address: clinicUser.clinics.address ?? '', phone: clinicUser.clinics.phone ?? '',
+        color: clinicUser.clinics.primary_color ?? '#7C3AED', slug: clinicUser.clinics.slug,
       }
       const user: AuthUser = {
-        id: clinicUser.user_id,
-        role: clinicUser.role,
-        displayName: clinicUser.display_name,
-        isSuperAdmin: clinicUser.is_superadmin,
+        id: clinicUser.user_id, role: clinicUser.role,
+        displayName: clinicUser.display_name, isSuperAdmin: clinicUser.is_superadmin,
       }
 
-      console.log('[login] sessão definida, redirecionando...')
       setStep('Abrindo painel...')
       setSession(clinic, user)
       window.location.href = '/dashboard'
@@ -109,6 +105,67 @@ export default function LoginPage() {
     }
   }
 
+  async function loadClinics() {
+    const { data } = await supabase.from('clinics').select('id, name').eq('is_active', true).order('name')
+    if (data) {
+      setClinics(data)
+      if (data.length === 1) setReg(p => ({ ...p, clinic_id: data[0].id }))
+    }
+  }
+
+  function switchToRegister() {
+    setMode('register')
+    setRegError('')
+    setRegSuccess(false)
+    if (clinics.length === 0) loadClinics()
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    setRegError('')
+    if (!reg.name.trim()) return setRegError('Nome é obrigatório.')
+    if (!reg.email.trim()) return setRegError('E-mail é obrigatório.')
+    if (!reg.password || reg.password.length < 6) return setRegError('Senha deve ter pelo menos 6 caracteres.')
+    if (!reg.clinic_id) return setRegError('Selecione uma clínica.')
+    setRegLoading(true)
+
+    try {
+      // 1. Create auth user
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: reg.email.trim(),
+        password: reg.password,
+        options: { data: { display_name: reg.name.trim() } },
+      })
+      if (authErr) throw new Error(authErr.message)
+
+      // 2. Create pending patient record
+      const { error: patErr } = await supabase.from('patients').insert([{
+        clinic_id: reg.clinic_id,
+        name: reg.name.trim(),
+        email: reg.email.trim(),
+        phone: reg.phone.trim() || null,
+        cpf: reg.cpf.trim() || null,
+        is_active: false,
+        self_registered: true,
+        registration_status: 'pending',
+      }])
+
+      if (patErr) {
+        console.error('[register] patient insert error:', patErr)
+        // Auth user was created; just warn but don't block
+      }
+
+      // Sign out the newly created user — they need admin approval first
+      await supabase.auth.signOut()
+      setRegSuccess(true)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setRegError(msg === 'User already registered' ? 'Este e-mail já está cadastrado.' : msg)
+    } finally {
+      setRegLoading(false)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.card}>
@@ -117,40 +174,86 @@ export default function LoginPage() {
           <p className={styles.brandSub}>Gestão clínica inteligente</p>
         </div>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.field}>
-            <label htmlFor="credential">Usuário ou E-mail</label>
-            <input
-              id="credential"
-              type="text"
-              value={credential}
-              onChange={(e) => setCredential(e.target.value)}
-              placeholder="usuario ou email@clinica.com"
-              required
-              autoComplete="username"
-            />
-          </div>
-
-          <div className={styles.field}>
-            <label htmlFor="password">Senha</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && <p className={styles.error}>{error}</p>}
-          {step && <p className={styles.step}>{step}</p>}
-
-          <button type="submit" className={styles.btn} disabled={loading}>
-            {loading ? (step || 'Autenticando...') : 'Entrar'}
+        {/* Tab switch */}
+        <div className={styles.modeTabs}>
+          <button className={`${styles.modeTab} ${mode === 'login' ? styles.modeTabActive : ''}`} onClick={() => setMode('login')}>
+            Entrar
           </button>
-        </form>
+          <button className={`${styles.modeTab} ${mode === 'register' ? styles.modeTabActive : ''}`} onClick={switchToRegister}>
+            Sou Paciente
+          </button>
+        </div>
+
+        {mode === 'login' ? (
+          <form onSubmit={handleLogin} className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="credential">Usuário ou E-mail</label>
+              <input id="credential" type="text" value={credential}
+                onChange={e => setCredential(e.target.value)}
+                placeholder="usuario ou email@clinica.com" required autoComplete="username" />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="password">Senha</label>
+              <input id="password" type="password" value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••" required autoComplete="current-password" />
+            </div>
+            {error && <p className={styles.error}>{error}</p>}
+            {step && <p className={styles.step}>{step}</p>}
+            <button type="submit" className={styles.btn} disabled={loading}>
+              {loading ? (step || 'Autenticando...') : 'Entrar'}
+            </button>
+          </form>
+        ) : regSuccess ? (
+          <div className={styles.successBox}>
+            <div className={styles.successIcon}>✓</div>
+            <h3 className={styles.successTitle}>Cadastro enviado!</h3>
+            <p className={styles.successMsg}>
+              Seu cadastro foi recebido e está aguardando aprovação da clínica.<br />
+              Você receberá um contato assim que for aprovado.
+            </p>
+            <button className={styles.btnOutline} onClick={() => { setMode('login'); setRegSuccess(false) }}>
+              Voltar ao login
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleRegister} className={styles.form}>
+            {clinics.length > 1 && (
+              <div className={styles.field}>
+                <label>Clínica</label>
+                <select value={reg.clinic_id} onChange={e => setReg(p => ({ ...p, clinic_id: e.target.value }))} required>
+                  <option value="">Selecione a clínica</option>
+                  {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+            <div className={styles.field}>
+              <label>Nome completo *</label>
+              <input type="text" value={reg.name} onChange={e => setReg(p => ({ ...p, name: e.target.value }))} placeholder="Seu nome" required />
+            </div>
+            <div className={styles.field}>
+              <label>Telefone / WhatsApp</label>
+              <input type="tel" value={reg.phone} onChange={e => setReg(p => ({ ...p, phone: e.target.value }))} placeholder="(00) 00000-0000" />
+            </div>
+            <div className={styles.field}>
+              <label>CPF</label>
+              <input type="text" value={reg.cpf} onChange={e => setReg(p => ({ ...p, cpf: e.target.value }))} placeholder="000.000.000-00" />
+            </div>
+            <div className={styles.field}>
+              <label>E-mail *</label>
+              <input type="email" value={reg.email} onChange={e => setReg(p => ({ ...p, email: e.target.value }))} placeholder="seu@email.com" required />
+            </div>
+            <div className={styles.field}>
+              <label>Senha *</label>
+              <input type="password" value={reg.password} onChange={e => setReg(p => ({ ...p, password: e.target.value }))} placeholder="mín. 6 caracteres" required />
+            </div>
+            {regError && <p className={styles.error}>{regError}</p>}
+            <p className={styles.regNote}>Após o cadastro, sua conta ficará pendente de aprovação da clínica.</p>
+            <button type="submit" className={styles.btn} disabled={regLoading}>
+              {regLoading ? 'Enviando cadastro...' : 'Solicitar Cadastro'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )

@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone } from '@/lib/utils'
+import { getGCalToken, fetchGCalEvents, createGCalEvent, connectGoogleCalendar, type GCalEvent } from '@/lib/googleCalendar'
 import type { Appointment, Patient, Professional } from '@/types'
 import { statusColor, type CalendarEvent } from '@/components/agenda/FullCalendarWrapper'
 import styles from './agenda.module.css'
@@ -40,9 +41,13 @@ export default function AgendaPage() {
   const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState<NewAppt>(BLANK)
   const [saving, setSaving] = useState(false)
+  const [syncToGCal, setSyncToGCal] = useState(false)
   const [filterDate, setFilterDate] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selected, setSelected] = useState<Appointment | null>(null)
+  const [gcalEvents, setGcalEvents] = useState<GCalEvent[]>([])
+  const [gcalConnected, setGcalConnected] = useState(false)
+  const [gcalError, setGcalError] = useState('')
 
   const loadData = useCallback(async () => {
     if (!clinic) return
@@ -63,8 +68,37 @@ export default function AgendaPage() {
 
   useEffect(() => { if (clinic) loadData() }, [clinic, loadData])
 
-  const calendarEvents = useMemo<CalendarEvent[]>(() =>
-    appointments.map((a) => {
+  useEffect(() => {
+    const token = getGCalToken()
+    setGcalConnected(!!token)
+    if (token) loadGCalEvents(token)
+  }, [])
+
+  async function loadGCalEvents(token: string) {
+    try {
+      const now = new Date()
+      const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+      const timeMax = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString()
+      const events = await fetchGCalEvents(token, timeMin, timeMax)
+      setGcalEvents(events)
+    } catch {
+      setGcalConnected(false)
+    }
+  }
+
+  async function handleConnectGCal() {
+    setGcalError('')
+    try {
+      const token = await connectGoogleCalendar()
+      setGcalConnected(true)
+      await loadGCalEvents(token)
+    } catch (err: unknown) {
+      setGcalError(err instanceof Error ? err.message : 'Erro ao conectar')
+    }
+  }
+
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const clinicEvents: CalendarEvent[] = appointments.map((a) => {
       const start = a.scheduled_at
       const end = start
         ? new Date(new Date(start).getTime() + (a.duration_minutes ?? 60) * 60000).toISOString()
@@ -77,8 +111,17 @@ export default function AgendaPage() {
         color: statusColor(a.status ?? ''),
         extendedProps: { appt: a },
       }
-    }),
-  [appointments])
+    })
+    const gEvents: CalendarEvent[] = gcalEvents.map((e) => ({
+      id: `gcal-${e.id}`,
+      title: `📅 ${e.summary}`,
+      start: e.start.dateTime ?? e.start.date ?? '',
+      end: e.end.dateTime ?? e.end.date,
+      color: '#4285F4',
+      extendedProps: { gcal: true, link: e.htmlLink },
+    }))
+    return [...clinicEvents, ...gEvents]
+  }, [appointments, gcalEvents])
 
   const filtered = appointments.filter((a) => {
     const matchStatus = !filterStatus || a.status === filterStatus
@@ -100,6 +143,26 @@ export default function AgendaPage() {
     if (!clinic || !form.patient_id || !form.scheduled_at) return
     setSaving(true)
     await supabase.from('appointments').insert([{ ...form, clinic_id: clinic.id }])
+
+    // Sync to Google Calendar if connected and checkbox checked
+    if (syncToGCal && gcalConnected) {
+      const token = getGCalToken()
+      if (token) {
+        const patient = patients.find(p => p.id === form.patient_id)
+        const end = new Date(new Date(form.scheduled_at).getTime() + form.duration_minutes * 60000).toISOString()
+        try {
+          const event = await createGCalEvent(token, {
+            summary: `${form.procedure_name || 'Consulta'} — ${patient?.name ?? 'Paciente'}`,
+            description: form.notes || undefined,
+            start: form.scheduled_at,
+            end,
+          })
+          await loadGCalEvents(token)
+          if (event.htmlLink) window.open(event.htmlLink, '_blank')
+        } catch { /* ignore gcal errors */ }
+      }
+    }
+
     setSaving(false)
     setShowModal(false)
     setForm(BLANK)
@@ -147,6 +210,21 @@ export default function AgendaPage() {
           </button>
         </div>
       </div>
+
+      {/* Google Calendar status bar */}
+      {!gcalConnected && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        <div className={styles.gcalBanner}>
+          <span>📅 Conecte o Google Calendar para ver seus eventos pessoais na agenda</span>
+          <button className={styles.gcalBannerBtn} onClick={handleConnectGCal}>Conectar</button>
+        </div>
+      )}
+      {gcalError && <p className={styles.gcalErrorMsg}>{gcalError}</p>}
+      {gcalConnected && (
+        <div className={styles.gcalStatus}>
+          <span className={styles.gcalDot} />
+          Google Calendar conectado — {gcalEvents.length} evento(s) sincronizado(s)
+        </div>
+      )}
 
       {viewMode === 'lista' && (
         <div className={styles.filters}>
@@ -303,6 +381,12 @@ export default function AgendaPage() {
                 <label>Observações</label>
                 <textarea rows={3} value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
               </div>
+              {gcalConnected && (
+                <label className={styles.gcalCheck}>
+                  <input type="checkbox" checked={syncToGCal} onChange={e => setSyncToGCal(e.target.checked)} />
+                  Sincronizar com Google Calendar
+                </label>
+              )}
             </div>
             <div className={styles.modalFooter}>
               <button className={styles.btnCancel} onClick={() => setShowModal(false)}>Cancelar</button>
