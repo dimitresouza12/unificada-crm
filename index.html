@@ -290,20 +290,24 @@
                     </div>
                 </div>
 
-                <!-- Admin Sub-tabs -->
-                <div class="admin-tabs-container">
-                    <div class="admin-tabs">
-                        <button class="admin-tab-btn active" data-admin-tab="adminClinicas">
-                            <i class="ph ph-buildings"></i> Clínicas
-                        </button>
-                        <button class="admin-tab-btn" data-admin-tab="adminUsuarios">
-                            <i class="ph ph-users-three"></i> Usuários Globais
-                        </button>
-                        <button class="admin-tab-btn" data-admin-tab="adminLogs">
-                            <i class="ph ph-scroll"></i> Logs do Sistema
-                        </button>
+                <div class="admin-layout" style="display: flex; gap: 2rem; align-items: flex-start; margin-top: 1.5rem;">
+                    <!-- Admin Lateral Sidebar -->
+                    <div class="admin-sidebar" style="width: 250px; flex-shrink: 0; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 1rem; position: sticky; top: 90px;">
+                        <div class="admin-tabs" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button class="admin-tab-btn active" data-admin-tab="adminClinicas" style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-buildings"></i> Clínicas
+                            </button>
+                            <button class="admin-tab-btn" data-admin-tab="adminUsuarios" style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-users-three"></i> Usuários Globais
+                            </button>
+                            <button class="admin-tab-btn" data-admin-tab="adminLogs" style="justify-content: flex-start; padding: 0.75rem 1rem; border-radius: 8px; width: 100%;">
+                                <i class="ph ph-scroll"></i> Logs do Sistema
+                            </button>
+                        </div>
                     </div>
-                </div>
+
+                    <!-- Admin Content Area -->
+                    <div class="admin-main-content" style="flex: 1; min-width: 0;">
 
                 <div id="adminClinicas" class="admin-tab-content active">
                     <div class="admin-actions-bar">
@@ -311,7 +315,7 @@
                             <i class="ph ph-magnifying-glass"></i>
                             <input type="text" id="searchAdminClinicas" placeholder="Buscar clínica por nome ou ID...">
                         </div>
-                        <button class="btn btn-primary" onclick="openModal('modalNovaClinica')">
+                        <button class="btn btn-primary" onclick="openModal('modalNewClinic')">
                             <i class="ph ph-plus"></i> Nova Clínica
                         </button>
                     </div>
@@ -394,20 +398,9 @@
                             </thead>
                             <tbody id="tableBodyAdminLogs">
                                 <tr><td colspan="5" class="loading-state">Carregando logs...</td></tr>
-                            </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-                                    <th>Username</th>
-                                    <th>Email</th>
-                                    <th>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBodyAdminSuperUsers">
-                                <!-- Dinâmico -->
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>

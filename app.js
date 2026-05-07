@@ -1067,21 +1067,24 @@ async function handleNewClinic(e) {
     btnSubmit.disabled = true;
     btnSubmit.innerHTML = '<i class="ph ph-circle-notch animate-spin"></i> Provisionando...';
 
-    const name = document.getElementById('adminNewClinicName').value;
-    const type = document.getElementById('adminNewClinicType').value;
-    const email = document.getElementById('adminNewClinicEmail').value;
-    const password = document.getElementById('adminNewClinicPassword').value;
-    const plan = document.getElementById('adminNewClinicPlan').value;
+    const name = document.getElementById('clinicName').value;
+    const type = document.getElementById('clinicType').value;
+    const plan = document.getElementById('clinicPlan').value;
+    const adminName = document.getElementById('adminUserName').value;
+    const adminLogin = document.getElementById('adminUserLogin').value;
+    const email = document.getElementById('adminUserEmail').value;
+    const password = document.getElementById('adminUserPass').value;
     
-    // Gerar slug amigável
-    const slug = name.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+    // Gerar slug amigável a partir do slug informado ou do nome
+    const slugInput = document.getElementById('clinicSlug').value;
+    const slug = (slugInput || name).toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
 
     try {
         // 1. Criar Usuário no Auth
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email,
             password,
-            options: { data: { full_name: `Admin ${name}` } }
+            options: { data: { full_name: adminName } }
         });
 
         if (authError) throw authError;
@@ -1108,8 +1111,8 @@ async function handleNewClinic(e) {
                 clinic_id: clinic.id,
                 user_id: authData.user.id,
                 role: 'admin',
-                display_name: `Admin ${name}`,
-                username: email.split('@')[0], // Username inicial baseado no email
+                display_name: adminName,
+                username: adminLogin, // Username informado pelo admin
                 email: email,
                 is_active: true
             });
@@ -1117,10 +1120,10 @@ async function handleNewClinic(e) {
         if (userLinkError) throw userLinkError;
 
         // 4. Log audit
-        await logAudit(null, 'ADMIN', 'CLINIC_PROVISIONED', { clinic_name: name, type, plan });
+        await logAudit(null, 'ADMIN', 'CLINIC_PROVISIONED', { clinic_name: name, type, plan, admin_email: email });
 
         alert('Clínica e Usuário provisionados com sucesso!');
-        closeModal('modalNovaClinica');
+        closeModal('modalNewClinic');
         e.target.reset();
         fetchAdminData();
     } catch (err) {
@@ -1132,7 +1135,7 @@ async function handleNewClinic(e) {
     }
 }
 
-document.getElementById('formNovaClinica')?.addEventListener('submit', handleNewClinic);
+document.getElementById('formNewClinic')?.addEventListener('submit', handleNewClinic);
 
 async function fetchAdminData() {
     try {
