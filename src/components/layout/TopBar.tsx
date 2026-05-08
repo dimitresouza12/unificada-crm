@@ -18,7 +18,6 @@ export function TopBar({ clinic, onMenuToggle }: Props) {
         {clinic.logo && (
           <img src={clinic.logo} alt={clinic.name} className={styles.logo} />
         )}
-        <span className={styles.clinicName}>{clinic.name}</span>
       </div>
     </header>
   )
