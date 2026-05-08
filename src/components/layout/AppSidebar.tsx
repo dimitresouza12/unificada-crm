@@ -15,6 +15,7 @@ const NAV = [
   { path: '/agenda',        label: 'Agenda',        icon: 'calendar'   as const },
   { path: '/financeiro',    label: 'Financeiro',    icon: 'finance'    as const },
   { path: '/equipe',        label: 'Equipe',        icon: 'team'       as const },
+  { path: '/crm',           label: 'CRM',           icon: 'crm'        as const },
   { path: '/configuracoes', label: 'Configurações', icon: 'settings'   as const },
 ]
 
