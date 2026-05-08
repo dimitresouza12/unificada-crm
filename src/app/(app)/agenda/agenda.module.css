@@ -10,7 +10,9 @@
 .gcalBannerBtn { padding:.35rem .875rem; background:#4F46E5; color:#fff; border:none; border-radius:var(--radius-md); font-size:.8rem; font-weight:600; cursor:pointer; white-space:nowrap; }
 .gcalBannerBtn:hover { opacity:.9; }
 .gcalStatus { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:#065F46; background:#ECFDF5; border:1px solid #A7F3D0; border-radius:var(--radius-md); padding:.5rem .875rem; }
-.gcalDot { width:7px; height:7px; border-radius:50%; background:#10B981; flex-shrink:0; }
+.gcalDot { width:7px; height:7px; border-radius:50%; background:#10B981; flex-shrink:0; display:inline-block; }
+.btnGcalSmall { display:flex; align-items:center; gap:.4rem; padding:.4rem .75rem; font-size:.8rem; font-weight:500; background:none; border:1px solid var(--border-color); border-radius:var(--radius-md); cursor:pointer; color:var(--text-secondary); white-space:nowrap; transition:background 0.15s; }
+.btnGcalSmall:hover { background:var(--bg-secondary); }
 .gcalErrorMsg { font-size:.82rem; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:var(--radius-md); padding:.5rem .875rem; }
 .gcalCheck { display:flex; align-items:center; gap:.5rem; font-size:.855rem; color:var(--text-primary); cursor:pointer; padding:.5rem .75rem; background:var(--bg-secondary); border-radius:var(--radius-md); }
 .calendarWrap { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--card-shadow); }

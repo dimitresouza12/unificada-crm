@@ -255,3 +255,10 @@
   font-size: 0.78rem;
   font-weight: 500;
 }
+
+.slugHint {
+  font-size: 0.72rem;
+  color: rgba(159,103,255,0.7);
+  margin-top: 0.2rem;
+  font-family: monospace;
+}

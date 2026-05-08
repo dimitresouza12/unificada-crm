@@ -196,35 +196,33 @@ export default function AgendaPage() {
               className={`${styles.toggleBtn} ${viewMode === 'calendar' ? styles.toggleActive : ''}`}
               onClick={() => setViewMode('calendar')}
             >
-              📅 Calendário
+              Calendário
             </button>
             <button
               className={`${styles.toggleBtn} ${viewMode === 'lista' ? styles.toggleActive : ''}`}
               onClick={() => setViewMode('lista')}
             >
-              ☰ Lista
+              Lista
             </button>
           </div>
+          {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+            gcalConnected ? (
+              <button className={styles.btnGcalSmall} title={`${gcalEvents.length} evento(s) sincronizado(s)`}>
+                <span className={styles.gcalDot} /> GCal
+              </button>
+            ) : (
+              <button className={styles.btnGcalSmall} onClick={handleConnectGCal}>
+                Vincular Google Calendar
+              </button>
+            )
+          )}
           <button className={styles.btnPrimary} onClick={() => setShowModal(true)}>
             + Novo Agendamento
           </button>
         </div>
       </div>
 
-      {/* Google Calendar status bar */}
-      {!gcalConnected && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
-        <div className={styles.gcalBanner}>
-          <span>📅 Conecte o Google Calendar para ver seus eventos pessoais na agenda</span>
-          <button className={styles.gcalBannerBtn} onClick={handleConnectGCal}>Conectar</button>
-        </div>
-      )}
       {gcalError && <p className={styles.gcalErrorMsg}>{gcalError}</p>}
-      {gcalConnected && (
-        <div className={styles.gcalStatus}>
-          <span className={styles.gcalDot} />
-          Google Calendar conectado — {gcalEvents.length} evento(s) sincronizado(s)
-        </div>
-      )}
 
       {viewMode === 'lista' && (
         <div className={styles.filters}>
