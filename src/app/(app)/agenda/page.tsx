@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone } from '@/lib/utils'
 import { getGCalToken, fetchGCalEvents, createGCalEvent, connectGoogleCalendar, type GCalEvent } from '@/lib/googleCalendar'
+import { Portal } from '@/components/ui/Portal'
 import type { Appointment, Patient, Professional } from '@/types'
 import { statusColor, type CalendarEvent } from '@/components/agenda/FullCalendarWrapper'
 import styles from './agenda.module.css'
@@ -298,6 +299,7 @@ export default function AgendaPage() {
 
       {/* Detail panel */}
       {selected && (
+        <Portal>
         <div className={styles.overlay} onClick={() => setSelected(null)}>
           <div className={styles.detailPanel} onClick={(e) => e.stopPropagation()}>
             <div className={styles.detailHeader}>
@@ -331,10 +333,12 @@ export default function AgendaPage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
 
       {/* New appointment modal */}
       {showModal && (
+        <Portal>
         <div className={styles.overlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -394,6 +398,7 @@ export default function AgendaPage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </div>
   )

@@ -7,6 +7,7 @@ import { TabFicha } from './TabFicha'
 import { TabOdontograma } from './TabOdontograma'
 import { TabTimeline } from './TabTimeline'
 import { TabChatIA } from './TabChatIA'
+import { Portal } from '@/components/ui/Portal'
 import styles from './ProntuarioModal.module.css'
 
 type Tab = 'ficha' | 'odontograma' | 'timeline' | 'chat'
@@ -48,6 +49,7 @@ export function ProntuarioModal({ patient, clinic, onClose }: Props) {
   ]
 
   return (
+    <Portal>
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.header}>
@@ -111,5 +113,6 @@ export function ProntuarioModal({ patient, clinic, onClose }: Props) {
         </div>
       </div>
     </div>
+    </Portal>
   )
 }

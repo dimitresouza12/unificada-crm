@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Patient } from '@/types'
+import { Portal } from '@/components/ui/Portal'
 import styles from './PatientFormModal.module.css'
 
 interface Props {
@@ -67,6 +68,7 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
   }
 
   return (
+    <Portal>
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <div className={styles.modalHeader}>
@@ -112,6 +114,7 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
         </form>
       </div>
     </div>
+    </Portal>
   )
 }
 
