@@ -30,12 +30,12 @@ export function ProntuarioModal({ patient, clinic, onClose }: Props) {
   }, [patient.id])
 
   async function loadRecord() {
-    // supabase singleton
+    setLoading(true)
     const [recRes, entriesRes] = await Promise.all([
       supabase.from('medical_records').select('*').eq('patient_id', patient.id).maybeSingle<MedicalRecord>(),
       supabase.from('record_entries').select('*').eq('patient_id', patient.id).order('created_at', { ascending: false }),
     ])
-    setRecord(recRes.data)
+    setRecord(recRes.data ?? null)
     setEntries((entriesRes.data ?? []) as RecordEntry[])
     setLoading(false)
   }

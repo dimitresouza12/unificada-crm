@@ -18,7 +18,14 @@ const NAV = [
   { path: '/configuracoes', label: 'Configurações', icon: 'settings'   as const },
 ]
 
-export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUser }) {
+interface Props {
+  clinic: AuthClinic
+  user: AuthUser
+  mobileOpen?: boolean
+  onMobileClose?: () => void
+}
+
+export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const clearSession = useAuthStore((s) => s.clearSession)
@@ -57,7 +64,11 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
 
   return (
     <aside
-      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}
+      className={[
+        styles.sidebar,
+        collapsed ? styles.collapsed : '',
+        mobileOpen ? styles.mobileOpen : '',
+      ].join(' ')}
       style={{ '--clinic-color': clinic.color } as React.CSSProperties}
     >
       <div className={`${styles.brand} ${collapsed ? styles.brandCollapsed : ''}`}>
@@ -83,7 +94,7 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
 
       <button
         className={`${styles.collapseBtn} ${collapsed ? styles.collapseBtnCenter : ''}`}
-        onClick={toggleCollapse}
+        onClick={collapsed ? toggleCollapse : (onMobileClose ?? toggleCollapse)}
         title={collapsed ? 'Expandir' : 'Recolher'}
       >
         <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={13} />
@@ -98,6 +109,7 @@ export function AppSidebar({ clinic, user }: { clinic: AuthClinic; user: AuthUse
               href={item.path}
               className={`${styles.navItem} ${active ? styles.active : ''} ${collapsed ? styles.navItemCollapsed : ''}`}
               title={collapsed ? item.label : undefined}
+              onClick={onMobileClose}
             >
               <span className={styles.iconWrap}>
                 <Icon name={item.icon} size={16} />
