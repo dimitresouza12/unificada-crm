@@ -1,5 +1,5 @@
 .page { display: flex; flex-direction: column; gap: 1.5rem; max-width: 620px; animation: fadeUp .35s cubic-bezier(.22,1,.36,1) both; }
-@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; } }
 .title { font-size: 1.55rem; font-weight: 750; color: var(--text-primary); letter-spacing: -0.4px; }
 .title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
 .card { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--card-shadow); }

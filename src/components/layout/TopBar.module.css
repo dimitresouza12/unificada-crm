@@ -1,8 +1,8 @@
 .bar {
-  display: none; /* desktop: hidden — logo lives in sidebar */
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
   height: 52px;
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
@@ -13,13 +13,13 @@
 }
 
 .menuBtn {
+  display: none; /* hidden on desktop */
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-primary);
   padding: 0.4rem;
   border-radius: var(--radius-sm);
-  display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
@@ -30,12 +30,13 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
+  margin-left: auto;
 }
 
 .logo {
   height: 28px;
   width: auto;
-  max-width: 80px;
+  max-width: 90px;
   object-fit: contain;
   border-radius: 6px;
 }
@@ -47,9 +48,20 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  max-width: 200px;
 }
 
 @media (max-width: 768px) {
-  .bar { display: flex; }
+  .bar {
+    padding: 0 1rem;
+    justify-content: space-between;
+  }
+
+  .menuBtn {
+    display: flex;
+  }
+
+  .clinicName {
+    max-width: 140px;
+  }
 }
