@@ -21,6 +21,8 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (patient) {
@@ -48,8 +50,15 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    // Input validation
+    if (!form.name.trim() || form.name.trim().length < 2) return setError('Nome deve ter pelo menos 2 caracteres.')
+    if (form.name.length > 120) return setError('Nome muito longo (máx. 120 caracteres).')
+    if (form.email && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return setError('E-mail inválido.')
+    if (form.phone && form.phone.replace(/\D/g, '').length > 15) return setError('Telefone inválido.')
+    if (form.cpf && form.cpf.replace(/\D/g, '').length > 11) return setError('CPF inválido (máx. 11 dígitos).')
+
     setSaving(true)
-    // supabase singleton
     try {
       const payload = { ...form, clinic_id: clinicId }
       if (isNew) {
@@ -64,6 +73,21 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
       setError(err instanceof Error ? err.message : 'Erro ao salvar.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!patient) return
+    setError('')
+    setDeleting(true)
+    try {
+      const { error: err } = await supabase.from('patients').update({ is_active: false }).eq('id', patient.id)
+      if (err) throw err
+      onSaved()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao excluir.')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -105,7 +129,26 @@ export function PatientFormModal({ patient, clinicId, onClose, onSaved }: Props)
 
           {error && <p className={styles.error}>{error}</p>}
 
+          {!isNew && confirmDelete && (
+            <div className={styles.confirmDelete}>
+              <p>Excluir <strong>{form.name}</strong>? O paciente sairá das listas mas o histórico (prontuário e agendamentos) será preservado.</p>
+              <div className={styles.confirmActions}>
+                <button type="button" className={styles.btnCancel} onClick={() => setConfirmDelete(false)} disabled={deleting}>
+                  Cancelar
+                </button>
+                <button type="button" className={styles.btnDanger} onClick={handleDelete} disabled={deleting}>
+                  {deleting ? 'Excluindo...' : 'Sim, excluir'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className={styles.formFooter}>
+            {!isNew && !confirmDelete && (
+              <button type="button" className={styles.btnDangerOutline} onClick={() => setConfirmDelete(true)} disabled={saving}>
+                Excluir
+              </button>
+            )}
             <button type="button" className={styles.btnCancel} onClick={onClose}>Cancelar</button>
             <button type="submit" className={styles.btnSave} disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar'}

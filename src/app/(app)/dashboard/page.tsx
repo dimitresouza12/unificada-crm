@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { syncLeadAppointments } from '@/lib/sync-leads'
 import { Icon } from '@/components/ui/Icon'
 import type { Appointment, FinancialRecord } from '@/types'
 import type { ComponentProps } from 'react'
@@ -30,7 +31,9 @@ export default function DashboardPage() {
 
   async function loadDashboard() {
     if (!clinic) return
+    await syncLeadAppointments(clinic.id)
     const today = new Date()
+    const now = new Date().toISOString()
     const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString()
     const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString()
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
@@ -40,7 +43,7 @@ export default function DashboardPage() {
       supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('clinic_id', clinic.id).gte('scheduled_at', startOfDay).lte('scheduled_at', endOfDay),
       supabase.from('appointments').select('id', { count: 'exact', head: true }).eq('clinic_id', clinic.id).eq('status', 'agendado'),
       supabase.from('financial_records').select('total_amount').eq('clinic_id', clinic.id).gte('created_at', startOfMonth),
-      supabase.from('appointments').select('*, patients(name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }).limit(8),
+      supabase.from('appointments').select('*, patients(name, phone)').eq('clinic_id', clinic.id).gte('scheduled_at', now).order('scheduled_at', { ascending: true }).limit(8),
     ])
 
     const monthRevenue = ((revenueRes.data ?? []) as Pick<FinancialRecord, 'total_amount'>[])

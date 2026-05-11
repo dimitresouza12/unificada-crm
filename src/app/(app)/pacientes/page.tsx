@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone, getStatusClass } from '@/lib/utils'
+import { syncLeadAppointments } from '@/lib/sync-leads'
 import type { Patient, Appointment } from '@/types'
 import { ProntuarioModal } from '@/components/prontuario/ProntuarioModal'
 import { PatientFormModal } from '@/components/pacientes/PatientFormModal'
@@ -29,6 +30,7 @@ export default function PacientesPage() {
 
   async function loadData() {
     if (!clinic) return
+    await syncLeadAppointments(clinic.id)
     const [apptRes, patRes] = await Promise.all([
       supabase.from('appointments').select('*, patients(id, name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }),
       supabase.from('patients').select('*').eq('clinic_id', clinic.id).eq('is_active', true).order('name'),
