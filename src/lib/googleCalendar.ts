@@ -74,24 +74,42 @@ export interface GCalEvent {
   end: { dateTime?: string; date?: string }
   description?: string
   htmlLink?: string
+  calendarId?: string
 }
 
-export async function fetchGCalEvents(token: string, timeMin: string, timeMax: string): Promise<GCalEvent[]> {
+export async function fetchGCalEvents(
+  token: string,
+  timeMin: string,
+  timeMax: string,
+  calendarIds: string[] = ['primary']
+): Promise<GCalEvent[]> {
   const params = new URLSearchParams({
     timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
   })
-  const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!res.ok) {
-    if (res.status === 401) {
-      disconnectGoogleCalendar()
-      throw new Error('Token expirado. Reconecte o Google Calendar.')
-    }
-    throw new Error('Erro ao buscar eventos do Google Calendar.')
-  }
-  const json = await res.json()
-  return json.items ?? []
+  const unique = Array.from(new Set(calendarIds.filter(Boolean)))
+  const results = await Promise.all(
+    unique.map(async (calId) => {
+      const res = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!res.ok) {
+        if (res.status === 401) {
+          disconnectGoogleCalendar()
+          throw new Error('Token expirado. Reconecte o Google Calendar.')
+        }
+        const body = await res.text().catch(() => '')
+        console.warn(`[GCal] Falha em ${calId}: ${res.status} ${res.statusText}`, body)
+        if (res.status === 403 || res.status === 404) return []
+        throw new Error(`Erro ao buscar eventos do calendário ${calId}.`)
+      }
+      const json = await res.json()
+      const items: GCalEvent[] = json.items ?? []
+      console.log(`[GCal] ${calId}: ${items.length} evento(s)`)
+      return items.map((e) => ({ ...e, calendarId: calId }))
+    })
+  )
+  return results.flat()
 }
 
 export async function createGCalEvent(token: string, event: {

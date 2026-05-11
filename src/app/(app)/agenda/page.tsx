@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth'
 import { formatDate, formatPhone } from '@/lib/utils'
 import { getGCalToken, fetchGCalEvents, createGCalEvent, connectGoogleCalendar, type GCalEvent } from '@/lib/googleCalendar'
 import { Portal } from '@/components/ui/Portal'
+import { syncLeadAppointments } from '@/lib/sync-leads'
 import type { Appointment, Patient, Professional } from '@/types'
 import { statusColor, type CalendarEvent } from '@/components/agenda/FullCalendarWrapper'
 import styles from './agenda.module.css'
@@ -52,6 +53,7 @@ export default function AgendaPage() {
 
   const loadData = useCallback(async () => {
     if (!clinic) return
+    await syncLeadAppointments(clinic.id)
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
         .from('appointments')
@@ -70,29 +72,34 @@ export default function AgendaPage() {
   useEffect(() => { if (clinic) loadData() }, [clinic, loadData])
 
   useEffect(() => {
-    const token = getGCalToken()
-    setGcalConnected(!!token)
-    if (token) loadGCalEvents(token)
+    setGcalConnected(!!getGCalToken())
   }, [])
 
-  async function loadGCalEvents(token: string) {
+  const loadGCalEvents = useCallback(async (token: string, profs: Professional[]) => {
     try {
       const now = new Date()
       const timeMin = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
       const timeMax = new Date(now.getFullYear(), now.getMonth() + 3, 0).toISOString()
-      const events = await fetchGCalEvents(token, timeMin, timeMax)
+      const calendarIds = ['primary', ...profs.map((p) => p.google_calendar_id).filter((id): id is string => !!id)]
+      const events = await fetchGCalEvents(token, timeMin, timeMax, calendarIds)
       setGcalEvents(events)
     } catch {
       setGcalConnected(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!gcalConnected) return
+    const token = getGCalToken()
+    if (token) loadGCalEvents(token, professionals)
+  }, [gcalConnected, professionals, loadGCalEvents])
 
   async function handleConnectGCal() {
     setGcalError('')
     try {
       const token = await connectGoogleCalendar()
       setGcalConnected(true)
-      await loadGCalEvents(token)
+      await loadGCalEvents(token, professionals)
     } catch (err: unknown) {
       setGcalError(err instanceof Error ? err.message : 'Erro ao conectar')
     }
@@ -158,7 +165,7 @@ export default function AgendaPage() {
             start: form.scheduled_at,
             end,
           })
-          await loadGCalEvents(token)
+          await loadGCalEvents(token, professionals)
           if (event.htmlLink) window.open(event.htmlLink, '_blank')
         } catch { /* ignore gcal errors */ }
       }
