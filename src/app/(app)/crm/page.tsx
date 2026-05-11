@@ -89,15 +89,31 @@ export default function CRMPage() {
     setConvertMsg('')
     setMsgLoading(true)
     const n8n = createN8nClient()
-    const clean = cleanPhone(lead.phone)
+    // Filter by conversation_id (unique per lead) — phone is unreliable due to format variants
     const { data } = await n8n
       .from('chat_messages')
       .select('*')
-      .or(`phone.eq.${clean},phone.eq.55${clean},phone.eq.${lead.phone}`)
-      .order('created_at', { ascending: true })
-      .limit(80)
+      .eq('conversation_id', lead.conversation_id)
+      .order('id', { ascending: true })
+      .limit(200)
     setMessages((data ?? []) as ChatMessage[])
     setMsgLoading(false)
+  }
+
+  function cleanUserMsg(raw: string | null): string {
+    if (!raw) return ''
+    // n8n stores user messages as JSON-like: ["oi"] or ["oi" "igor"] or ["msg"] null
+    // Strip surrounding brackets, drop trailing " null", split tokens, take the last one (most recent batch)
+    let s = raw.trim().replace(/\s+null\s*$/, '').trim()
+    if (s.startsWith('[') && s.endsWith(']')) s = s.slice(1, -1).trim()
+    // Split by `" "` boundary between batched tokens
+    const tokens = s.split(/"\s+"/).map((t) => t.replace(/^"|"$/g, '').trim()).filter(Boolean)
+    return tokens.length ? tokens[tokens.length - 1] : s
+  }
+
+  function cleanBotMsg(raw: string | null): string {
+    if (!raw) return ''
+    return raw.replace(/^=/, '').trim()
   }
 
   async function convertToPatient() {
@@ -237,17 +253,20 @@ export default function CRMPage() {
                   {msgLoading && <p className={styles.chatInfo}>Carregando...</p>}
                   {!msgLoading && messages.length === 0 && <p className={styles.chatInfo}>Nenhuma mensagem encontrada.</p>}
                   {messages.map(m => {
+                    const userText = cleanUserMsg(m.user_message)
+                    const botText = cleanBotMsg(m.bot_message)
+                    const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''
                     const msgs = []
-                    if (m.user_message) msgs.push(
+                    if (userText) msgs.push(
                       <div key={`u-${m.id}`} className={`${styles.bubble} ${styles.user}`}>
-                        <span>{m.user_message}</span>
-                        <span className={styles.bubbleTime}>{m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                        <span>{userText}</span>
+                        {time && <span className={styles.bubbleTime}>{time}</span>}
                       </div>
                     )
-                    if (m.bot_message) msgs.push(
+                    if (botText) msgs.push(
                       <div key={`b-${m.id}`} className={`${styles.bubble} ${styles.bot}`}>
-                        <span>{m.bot_message}</span>
-                        <span className={styles.bubbleTime}>{m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                        <span>{botText}</span>
+                        {time && <span className={styles.bubbleTime}>{time}</span>}
                       </div>
                     )
                     return msgs
