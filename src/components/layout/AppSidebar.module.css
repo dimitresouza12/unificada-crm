@@ -245,6 +245,34 @@
 }
 .themeBtn:hover { color: #F59E0B; }
 
+.themeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0 0.75rem 0.5rem;
+  padding: 0.525rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid var(--sidebar-border);
+  color: var(--sidebar-text);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+}
+.themeRow:hover {
+  background: var(--sidebar-bg-hover);
+  color: var(--sidebar-text-hover);
+}
+.themeIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  color: #F59E0B;
+}
+
 .logoutBtn {
   background: none;
   border: none;

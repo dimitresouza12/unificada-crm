@@ -16,6 +16,14 @@
 .gcalErrorMsg { font-size:.82rem; color:#DC2626; background:#FEF2F2; border:1px solid #FECACA; border-radius:var(--radius-md); padding:.5rem .875rem; }
 .gcalCheck { display:flex; align-items:center; gap:.5rem; font-size:.855rem; color:var(--text-primary); cursor:pointer; padding:.5rem .75rem; background:var(--bg-secondary); border-radius:var(--radius-md); }
 .calendarWrap { background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--card-shadow); }
+
+@media (max-width: 768px) {
+  .calendarWrap { padding: 0.5rem; border-radius: var(--radius-md); }
+  .header { gap: 0.5rem; }
+  .headerActions { width: 100%; justify-content: space-between; }
+  .btnPrimary { padding: 0.5rem 0.9rem; font-size: 0.82rem; }
+  .calHint { font-size: 0.7rem; margin-top: 0.5rem; }
+}
 .calLoading { padding: 3rem; text-align: center; color: var(--text-secondary); }
 .calHint { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 0.75rem; }
 .title { font-size: 1.55rem; font-weight: 750; color: var(--text-primary); letter-spacing: -0.4px; }

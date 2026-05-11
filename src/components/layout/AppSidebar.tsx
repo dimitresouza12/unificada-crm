@@ -111,10 +111,21 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
         })}
       </nav>
 
-      <div className={`${styles.footer} ${collapsed ? styles.footerCollapsed : ''}`}>
-        <button className={styles.themeBtn} onClick={toggleTheme} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>
-          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />
+      {!collapsed && (
+        <button className={styles.themeRow} onClick={toggleTheme}>
+          <span className={styles.themeIconWrap}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+          </span>
+          <span>{theme === 'dark' ? 'Tema claro' : 'Tema escuro'}</span>
         </button>
+      )}
+
+      <div className={`${styles.footer} ${collapsed ? styles.footerCollapsed : ''}`}>
+        {collapsed && (
+          <button className={styles.themeBtn} onClick={toggleTheme} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={16} />
+          </button>
+        )}
         {!collapsed && (
           <>
             <div className={styles.avatar}>{initials}</div>
