@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { AppSidebar } from '@/components/layout/AppSidebar'
-import { TopBar } from '@/components/layout/TopBar'
+import { Icon } from '@/components/ui/Icon'
 import styles from './app.module.css'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={styles.shell}>
-      {/* Mobile overlay backdrop */}
       {sidebarOpen && (
         <div className={styles.backdrop} onClick={() => setSidebarOpen(false)} />
       )}
@@ -34,8 +33,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onMobileClose={() => setSidebarOpen(false)}
       />
 
+      {!sidebarOpen && (
+        <button
+          className={styles.mobileMenu}
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Menu"
+        >
+          <Icon name="menu" size={22} />
+        </button>
+      )}
+
       <div className={styles.content}>
-        <TopBar clinic={clinic} onMenuToggle={() => setSidebarOpen((v) => !v)} />
         <main className={styles.main}>{children}</main>
       </div>
     </div>

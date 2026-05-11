@@ -64,6 +64,21 @@
   border-radius: 6px;
 }
 
+.logoImg {
+  height: 60px;
+  width: auto;
+  max-width: 170px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.logoImgCollapsed {
+  height: 38px;
+  width: 38px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 .logoDivider {
   width: 1px;
   height: 20px;

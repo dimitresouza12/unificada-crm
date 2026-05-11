@@ -74,7 +74,13 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
     >
       <div className={`${styles.brand} ${collapsed ? styles.brandCollapsed : ''}`}>
         <div className={styles.brandTop}>
-          {collapsed ? (
+          {clinic.logo ? (
+            <img
+              src={clinic.logo}
+              alt={clinic.name}
+              className={collapsed ? styles.logoImgCollapsed : styles.logoImg}
+            />
+          ) : collapsed ? (
             <span className={styles.logoText}><strong>M</strong></span>
           ) : (
             <span className={styles.logoText}>My<strong>Clinica</strong></span>
@@ -85,7 +91,7 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
 
       <button
         className={`${styles.collapseBtn} ${collapsed ? styles.collapseBtnCenter : ''}`}
-        onClick={collapsed ? toggleCollapse : (onMobileClose ?? toggleCollapse)}
+        onClick={toggleCollapse}
         title={collapsed ? 'Expandir' : 'Recolher'}
       >
         <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={13} />
