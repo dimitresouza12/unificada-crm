@@ -45,3 +45,12 @@ export function getStatusClass(status: string | null | undefined): string {
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ')
 }
+
+export function cleanPhone(raw: string | null | undefined): string {
+  if (!raw) return ''
+  let s = String(raw).trim()
+  if (s.startsWith('=')) s = s.slice(1)
+  if (s.includes('@')) s = s.split('@')[0]
+  const digits = s.replace(/\D/g, '')
+  return digits.slice(-11)
+}

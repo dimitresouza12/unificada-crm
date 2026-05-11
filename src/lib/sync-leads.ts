@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { createN8nClient } from '@/lib/supabase-n8n'
+import { cleanPhone } from '@/lib/utils'
 
 function parseN8nDate(raw: string): string | null {
   const iso = new Date(raw)
@@ -17,7 +18,7 @@ export async function syncLeadAppointments(clinicId: string) {
   const n8n = createN8nClient()
   const { data: leads } = await n8n
     .from('chats')
-    .select('phone, procedimento, data_agendamento')
+    .select('phone, nome, procedimento, data_agendamento')
     .eq('status', 'Agendado')
     .not('data_agendamento', 'is', null)
 
@@ -28,23 +29,42 @@ export async function syncLeadAppointments(clinicId: string) {
     .select('id, phone')
     .eq('clinic_id', clinicId)
 
-  if (!patients?.length) return
-
-  // Index patients by last 11 digits of phone (handles country code variants)
   const phoneMap = new Map<string, string>()
-  for (const p of patients) {
-    const d = String(p.phone ?? '').replace(/\D/g, '')
-    if (d) phoneMap.set(d.slice(-11), p.id)
+  for (const p of patients ?? []) {
+    const key = cleanPhone(p.phone)
+    if (key) phoneMap.set(key, p.id)
   }
 
   for (const lead of leads) {
-    const key = lead.phone.replace(/\D/g, '').slice(-11)
-    const patientId = phoneMap.get(key)
-    if (!patientId) continue
+    const key = cleanPhone(lead.phone)
+    if (!key) continue
 
     const scheduledAt = parseN8nDate(lead.data_agendamento)
     if (!scheduledAt) continue
 
+    let patientId = phoneMap.get(key)
+
+    // Auto-create patient if not found
+    if (!patientId) {
+      const { data: newPatient, error } = await supabase
+        .from('patients')
+        .insert([{
+          clinic_id: clinicId,
+          name: lead.nome?.trim() || `Lead ${key}`,
+          phone: lead.phone,
+          is_active: true,
+          registration_status: 'approved',
+          notes: lead.procedimento ? `Lead WhatsApp — interesse: ${lead.procedimento}` : 'Lead WhatsApp',
+        }])
+        .select('id')
+        .single()
+
+      if (error || !newPatient?.id) continue
+      patientId = newPatient.id as string
+      phoneMap.set(key, patientId)
+    }
+
+    // Skip if appointment already exists for that day
     const datePrefix = scheduledAt.slice(0, 10)
     const { data: existing } = await supabase
       .from('appointments')

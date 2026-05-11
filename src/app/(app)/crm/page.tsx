@@ -4,7 +4,7 @@ import { createN8nClient } from '@/lib/supabase-n8n'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { Portal } from '@/components/ui/Portal'
-import { formatDate } from '@/lib/utils'
+import { formatDate, cleanPhone } from '@/lib/utils'
 import styles from './crm.module.css'
 
 interface Lead {
@@ -80,7 +80,7 @@ export default function CRMPage() {
   async function loadExistingPatients() {
     if (!clinic) return
     const { data } = await supabase.from('patients').select('phone').eq('clinic_id', clinic.id)
-    const phones = new Set((data ?? []).map(p => String(p.phone ?? '').replace(/\D/g, '')))
+    const phones = new Set((data ?? []).map(p => cleanPhone(p.phone)).filter(Boolean))
     setExistingPatients(phones)
   }
 
@@ -89,7 +89,7 @@ export default function CRMPage() {
     setConvertMsg('')
     setMsgLoading(true)
     const n8n = createN8nClient()
-    const clean = lead.phone.replace(/\D/g, '')
+    const clean = cleanPhone(lead.phone)
     const { data } = await n8n
       .from('chat_messages')
       .select('*')
@@ -104,7 +104,7 @@ export default function CRMPage() {
     if (!selected || !clinic) return
     setConverting(true)
     setConvertMsg('')
-    const clean = selected.phone.replace(/\D/g, '')
+    const clean = cleanPhone(selected.phone)
 
     // Check duplicate
     if (existingPatients.has(clean)) {
@@ -115,8 +115,8 @@ export default function CRMPage() {
 
     const { error } = await supabase.from('patients').insert([{
       clinic_id: clinic.id,
-      name: selected.nome?.trim() || `Lead ${selected.phone}`,
-      phone: selected.phone,
+      name: selected.nome?.trim() || `Lead ${clean || selected.phone}`,
+      phone: clean || selected.phone,
       is_active: true,
       registration_status: 'approved',
       notes: selected.procedimento ? `Procedimento de interesse: ${selected.procedimento}` : null,
@@ -175,7 +175,7 @@ export default function CRMPage() {
                 <div className={styles.cards}>
                   {cards.length === 0 && <p className={styles.empty}>Nenhum lead</p>}
                   {cards.map(lead => {
-                    const clean = lead.phone.replace(/\D/g, '')
+                    const clean = cleanPhone(lead.phone)
                     const isPatient = existingPatients.has(clean)
                     return (
                       <div key={`${lead.phone}-${lead.conversation_id}`} className={styles.card} onClick={() => openLead(lead)}>
@@ -260,7 +260,7 @@ export default function CRMPage() {
                 {convertMsg === 'ok' && <p className={styles.msgOk}>✓ Paciente criado com sucesso!</p>}
                 {convertMsg === 'already' && <p className={styles.msgWarn}>Telefone já cadastrado como paciente.</p>}
                 {convertMsg === 'error' && <p className={styles.msgErr}>Erro ao criar paciente.</p>}
-                {existingPatients.has(selected.phone.replace(/\D/g, '')) ? (
+                {existingPatients.has(cleanPhone(selected.phone)) ? (
                   <button className={styles.btnPatientExists} disabled>✓ Já é paciente</button>
                 ) : (
                   <button className={styles.btnConvert} onClick={convertToPatient} disabled={converting}>
