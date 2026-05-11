@@ -54,6 +54,32 @@ export default function LoginPage() {
   const [regSuccess, setRegSuccess] = useState(false)
   const [regLoading, setRegLoading] = useState(false)
 
+  // Rate limiting: 5 attempts → 60s lockout (persisted in localStorage)
+  function getRateLimitKey(cred: string) { return `rl:${cred.toLowerCase().trim()}` }
+  function isRateLimited(cred: string): number {
+    try {
+      const raw = localStorage.getItem(getRateLimitKey(cred))
+      if (!raw) return 0
+      const { count, lockedUntil } = JSON.parse(raw)
+      if (lockedUntil && Date.now() < lockedUntil) return Math.ceil((lockedUntil - Date.now()) / 1000)
+      if (count >= 5) return 60
+    } catch { /* ignore */ }
+    return 0
+  }
+  function recordFailure(cred: string) {
+    try {
+      const key = getRateLimitKey(cred)
+      const raw = localStorage.getItem(key)
+      const prev = raw ? JSON.parse(raw) : { count: 0 }
+      const count = (prev.count ?? 0) + 1
+      const lockedUntil = count >= 5 ? Date.now() + 60_000 : prev.lockedUntil
+      localStorage.setItem(key, JSON.stringify({ count, lockedUntil }))
+    } catch { /* ignore */ }
+  }
+  function clearRateLimit(cred: string) {
+    try { localStorage.removeItem(getRateLimitKey(cred)) } catch { /* ignore */ }
+  }
+
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return (
       <div className={styles.page}>
@@ -72,33 +98,42 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setStep('')
+
+    const cred = credential.trim()
+    const secsLocked = isRateLimited(cred)
+    if (secsLocked > 0) {
+      setError(`Muitas tentativas. Aguarde ${secsLocked}s antes de tentar novamente.`)
+      return
+    }
+
     setLoading(true)
 
     try {
-      let email = credential.trim()
+      let email = cred
 
       if (!email.includes('@')) {
         setStep('Buscando usuário...')
-        const { data: userData, error: lookupErr } = await supabase
-          .from('clinic_users').select('email')
-          .eq('username', email.toLowerCase()).eq('is_active', true).maybeSingle()
-        if (lookupErr) throw new Error('Erro de banco: ' + lookupErr.message)
-        if (!userData?.email) throw new Error('Usuário "' + email + '" não encontrado.')
-        email = userData.email
+        const { data: foundEmail, error: lookupErr } = await supabase
+          .rpc('get_email_by_username', { p_username: email.toLowerCase() })
+        if (lookupErr) { console.error('lookup error:', lookupErr); throw new Error('Erro ao buscar usuário.') }
+        if (!foundEmail) throw new Error('Usuário ou senha incorretos.')
+        email = foundEmail as string
       }
 
       setStep('Verificando senha...')
       const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password })
-      if (authErr) throw new Error(authErr.message)
+      if (authErr) {
+        recordFailure(cred)
+        throw new Error('Usuário ou senha incorretos.')
+      }
 
       setStep('Carregando clínica...')
       const { data: clinicUser, error: cuErr } = await supabase
         .from('clinic_users').select('*, clinics(*)')
         .eq('user_id', authData.user.id).eq('is_active', true)
         .maybeSingle<ClinicUser & { clinics: Clinic }>()
-      if (cuErr) throw new Error('Erro RLS: ' + cuErr.message)
-      if (!clinicUser) throw new Error('Usuário sem clínica associada. (user_id: ' + authData.user.id + ')')
-      if (!clinicUser.clinics) throw new Error('Dados da clínica não encontrados.')
+      if (cuErr) { console.error('clinic_users error:', cuErr); throw new Error('Erro ao carregar dados da clínica.') }
+      if (!clinicUser || !clinicUser.clinics) throw new Error('Usuário sem clínica associada. Contate o suporte.')
 
       const clinic: AuthClinic = {
         id: clinicUser.clinic_id, name: clinicUser.clinics.name,
@@ -111,6 +146,7 @@ export default function LoginPage() {
         displayName: clinicUser.display_name, isSuperAdmin: clinicUser.is_superadmin,
       }
 
+      clearRateLimit(cred)
       setStep('Abrindo painel...')
       setSession(clinic, user)
       window.location.href = '/dashboard'
@@ -136,11 +172,7 @@ export default function LoginPage() {
     try {
       const slug = toSlug(reg.clinic_name)
 
-      // 1. Check slug uniqueness
-      const { data: existing } = await supabase.from('clinics').select('id').eq('slug', slug).maybeSingle()
-      if (existing) return setRegError('Já existe uma clínica com esse nome. Tente um nome diferente.')
-
-      // 2. Create auth user
+      // 1. Create auth user
       const { data: authData, error: authErr } = await supabase.auth.signUp({
         email: reg.email.trim(),
         password: reg.password,
@@ -148,34 +180,27 @@ export default function LoginPage() {
       })
       if (authErr) throw new Error(authErr.message)
       if (!authData.user) throw new Error('Falha ao criar usuário.')
+      if (!authData.session) {
+        // Email confirmation required by Supabase Auth — user must confirm before clinic can be linked
+        throw new Error('Confirme seu e-mail para concluir o cadastro e depois faça login.')
+      }
 
-      // 3. Create clinic
-      const { data: clinic, error: clinicErr } = await supabase
-        .from('clinics')
-        .insert([{
-          name: reg.clinic_name.trim(),
-          slug,
-          clinic_type: reg.clinic_type,
-          phone: reg.phone.trim() || null,
-          is_active: true,
-          plan: 'trial',
-        }])
-        .select()
-        .single<Clinic>()
-      if (clinicErr) throw new Error('Erro ao criar clínica: ' + clinicErr.message)
-
-      // 4. Create clinic_user (admin)
-      const { error: cuErr } = await supabase.from('clinic_users').insert([{
-        clinic_id: clinic.id,
-        user_id: authData.user.id,
-        role: 'admin',
-        display_name: reg.admin_name.trim(),
-        username: slug,
-        is_active: true,
-        is_superadmin: false,
-        email: reg.email.trim(),
-      }])
-      if (cuErr) throw new Error('Erro ao vincular usuário: ' + cuErr.message)
+      // 2. Create clinic + admin via SECURITY DEFINER RPC (bypasses RLS atomically)
+      const { error: rpcErr } = await supabase.rpc('register_clinic_and_admin', {
+        p_clinic_name: reg.clinic_name.trim(),
+        p_slug: slug,
+        p_clinic_type: reg.clinic_type,
+        p_phone: reg.phone.trim(),
+        p_admin_name: reg.admin_name.trim(),
+        p_username: slug,
+        p_email: reg.email.trim(),
+      })
+      if (rpcErr) {
+        console.error('register_clinic_and_admin error:', rpcErr)
+        if (rpcErr.message.includes('slug_taken')) throw new Error('Já existe uma clínica com esse nome. Tente um nome diferente.')
+        if (rpcErr.message.includes('user_already_linked')) throw new Error('Este e-mail já está vinculado a uma clínica.')
+        throw new Error('Erro ao criar clínica. Tente novamente.')
+      }
 
       await supabase.auth.signOut()
       setRegSuccess(true)
