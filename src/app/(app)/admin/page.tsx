@@ -25,12 +25,25 @@ export default function AdminPage() {
   const [uploadMsg, setUploadMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingClinicRef = useRef<Clinic | null>(null)
+  // null = verifying, true = allowed, false = denied
+  const [verified, setVerified] = useState<boolean | null>(null)
 
-  if (!user?.isSuperAdmin) {
-    return <div className={styles.denied}>Acesso restrito a superadmins.</div>
-  }
-
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => {
+    async function verifyAndLoad() {
+      if (!user?.id) { setVerified(false); return }
+      // Re-verify superadmin status directly from DB (cannot be spoofed via localStorage)
+      const { data } = await supabase
+        .from('clinic_users')
+        .select('is_superadmin')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (!data?.is_superadmin) { setVerified(false); return }
+      setVerified(true)
+      loadAll()
+    }
+    verifyAndLoad()
+  }, [user])
 
   async function loadAll() {
     const [clinicsRes, usersRes, logsRes] = await Promise.all([
@@ -107,6 +120,9 @@ export default function AdminPage() {
     { key: 'usuarios', label: `Usuários (${users.length})` },
     { key: 'logs', label: 'Logs de Auditoria' },
   ]
+
+  if (verified === null) return <div className={styles.denied}>Verificando permissões...</div>
+  if (!verified) return <div className={styles.denied}>Acesso restrito a superadmins.</div>
 
   return (
     <div className={styles.page}>
