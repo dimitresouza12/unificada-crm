@@ -43,7 +43,7 @@ export function ProntuarioModal({ patient, clinic, onClose }: Props) {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'ficha', label: '📋 Ficha Clínica' },
-    { key: 'odontograma', label: '🦷 Odontograma' },
+    ...(clinic.type === 'odonto' ? [{ key: 'odontograma' as Tab, label: '🦷 Odontograma' }] : []),
     { key: 'timeline', label: '📝 Evolução' },
     { key: 'chat', label: '💬 Chat IA' },
   ]
@@ -88,7 +88,7 @@ export function ProntuarioModal({ patient, clinic, onClose }: Props) {
                   onSaved={loadRecord}
                 />
               )}
-              {tab === 'odontograma' && (
+              {tab === 'odontograma' && clinic.type === 'odonto' && (
                 <TabOdontograma
                   record={record}
                   patient={patient}

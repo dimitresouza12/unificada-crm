@@ -103,6 +103,84 @@ export function TabFicha({ patient, record, entries, clinic, clinicId, clinicNam
     </div>
   )
 
+  const anamnesisFields: Record<string, [string, string][]> = {
+    odonto: [
+      ['a-saude', 'Estado geral de saúde'],
+      ['a-tratamento', 'Em tratamento médico? Qual?'],
+      ['a-medicamentos', 'Medicamentos em uso'],
+      ['a-alergia', 'Alergias'],
+      ['a-pressao', 'Pressão arterial'],
+      ['a-fumante', 'Fumante / Álcool'],
+      ['a-gengiva', 'Sangramento gengival'],
+      ['a-habitos', 'Hábitos bucais'],
+    ],
+    medico: [
+      ['a-motivo', 'Motivo da consulta (Queixa principal)'],
+      ['a-hist_familiar', 'Histórico familiar'],
+      ['a-comorbidades', 'Comorbidades'],
+      ['a-cirurgias', 'Cirurgias anteriores'],
+      ['a-medicamentos', 'Medicamentos em uso'],
+      ['a-alergia', 'Alergias'],
+      ['a-habitos', 'Hábitos de vida (Fumo/Álcool/Ativ. Física)'],
+    ],
+    estetica: [
+      ['a-queixa', 'Queixa principal'],
+      ['a-trat_anteriores', 'Tratamentos estéticos anteriores'],
+      ['a-cosmeticos', 'Uso de cosméticos / Ácidos'],
+      ['a-exposicao_solar', 'Exposição solar (Usa protetor?)'],
+      ['a-alergia', 'Alergias (A cosméticos ou outros)'],
+      ['a-queloides', 'Histórico de queloides'],
+      ['a-cicatrizes', 'Cicatrizes recentes?'],
+      ['a-gestante', 'Gestante / Lactante?'],
+    ],
+    vet: [
+      ['a-queixa', 'Motivo da consulta / Queixa'],
+      ['a-alimentacao', 'Alimentação / Dieta'],
+      ['a-ambiente', 'Ambiente onde vive'],
+      ['a-hist_doencas', 'Histórico de doenças / Cirurgias'],
+      ['a-vacinas', 'Vacinação e Vermifugação em dia?'],
+      ['a-medicamentos', 'Medicamentos em uso'],
+      ['a-alergia', 'Alergias conhecidas'],
+    ]
+  }
+
+  const clinicalExamFields: Record<string, [string, string][]> = {
+    odonto: [
+      ['e-higiene', 'Higiene bucal'],
+      ['e-halitose', 'Halitose'],
+      ['e-mucosa', 'Mucosa'],
+      ['e-palato', 'Palato'],
+      ['e-obs', 'Observações gerais'],
+    ],
+    medico: [
+      ['e-pressao', 'Pressão Arterial'],
+      ['e-fc', 'Frequência Cardíaca'],
+      ['e-antropometria', 'Peso / Altura / IMC'],
+      ['e-ausculta', 'Ausculta Cardíaca / Pulmonar'],
+      ['e-exame_fisico', 'Exame Físico Específico'],
+      ['e-obs', 'Observações gerais'],
+    ],
+    estetica: [
+      ['e-tipo_pele', 'Tipo de pele'],
+      ['e-fototipo', 'Fototipo'],
+      ['e-hidratacao', 'Grau de hidratação'],
+      ['e-lesoes', 'Lesões visíveis / Flacidez / Celulite'],
+      ['e-obs', 'Observações gerais'],
+    ],
+    vet: [
+      ['e-temperatura', 'Temperatura'],
+      ['e-mucosas', 'Mucosas'],
+      ['e-hidratacao', 'Hidratação'],
+      ['e-fc', 'Frequência Cardíaca (FC)'],
+      ['e-fr', 'Frequência Respiratória (FR)'],
+      ['e-linfonodos', 'Linfonodos'],
+      ['e-obs', 'Observações gerais'],
+    ]
+  }
+
+  const currentAnamnesisFields = anamnesisFields[clinic.type] || anamnesisFields.odonto
+  const currentClinicalExamFields = clinicalExamFields[clinic.type] || clinicalExamFields.odonto
+
   return (
     <div className={styles.wrap}>
       <section className={styles.section}>
@@ -112,10 +190,17 @@ export function TabFicha({ patient, record, entries, clinic, clinicId, clinicNam
             ['p-cpf','CPF'], ['p-rg','RG'], ['p-nasc','Data de Nascimento'],
             ['p-genero','Gênero'], ['p-ocupacao','Ocupação'], ['p-endereco','Endereço'],
             ['p-indicado','Como nos conheceu'], ['p-emergencia','Contato de Emergência'],
+            ...(clinic.type === 'vet' ? [
+              ['p-pet_especie', 'Espécie do Pet'],
+              ['p-pet_raca', 'Raça'],
+              ['p-pet_idade', 'Idade do Pet'],
+              ['p-pet_peso', 'Peso do Pet (kg)'],
+              ['p-pet_castrado', 'Castrado?'],
+            ] : [])
           ].map(([k,l]) => (
             <div className={styles.field} key={k}>
-              <label>{l}</label>
-              <input value={anamnesis[k] ?? ''} onChange={(e) => setA(k, e.target.value)} />
+              <label>{l as string}</label>
+              <input value={anamnesis[k as string] ?? ''} onChange={(e) => setA(k as string, e.target.value)} />
             </div>
           ))}
         </div>
@@ -124,25 +209,14 @@ export function TabFicha({ patient, record, entries, clinic, clinicId, clinicNam
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Anamnese</h3>
         <div className={styles.grid2}>
-          {aField('a-saude', 'Estado geral de saúde')}
-          {aField('a-tratamento', 'Em tratamento médico? Qual?')}
-          {aField('a-medicamentos', 'Medicamentos em uso')}
-          {aField('a-alergia', 'Alergias')}
-          {aField('a-pressao', 'Pressão arterial')}
-          {aField('a-fumante', 'Fumante / Álcool')}
-          {aField('a-gengiva', 'Sangramento gengival')}
-          {aField('a-habitos', 'Hábitos bucais')}
+          {currentAnamnesisFields.map(([k, label]) => aField(k, label))}
         </div>
       </section>
 
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Exame Clínico</h3>
         <div className={styles.grid2}>
-          {eField('e-higiene', 'Higiene bucal')}
-          {eField('e-halitose', 'Halitose')}
-          {eField('e-mucosa', 'Mucosa')}
-          {eField('e-palato', 'Palato')}
-          {eField('e-obs', 'Observações gerais')}
+          {currentClinicalExamFields.map(([k, label]) => eField(k, label))}
         </div>
       </section>
 
