@@ -75,7 +75,7 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
       <div className={`${styles.brand} ${collapsed ? styles.brandCollapsed : ''}`}>
         <div className={styles.brandTop}>
           {collapsed ? (
-            <span className={styles.logoText}><strong>M</strong></span>
+            <img src="/favicon.svg" alt="MyClinica" className={styles.brandIcon} />
           ) : (
             <span className={styles.logoText}>My<strong>Clinica</strong></span>
           )}
