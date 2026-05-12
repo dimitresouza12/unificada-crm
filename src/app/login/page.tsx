@@ -205,8 +205,13 @@ export default function LoginPage() {
       await supabase.auth.signOut()
       setRegSuccess(true)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
-      setRegError(msg === 'User already registered' ? 'Este e-mail já está cadastrado.' : msg)
+      const raw = err instanceof Error ? err.message : String(err)
+      const lower = raw.toLowerCase()
+      let friendly = raw
+      if (raw === 'User already registered') friendly = 'Este e-mail já está cadastrado.'
+      else if (lower.includes('rate limit') || lower.includes('rate-limit')) friendly = 'Muitas tentativas de cadastro neste momento. Aguarde alguns minutos e tente novamente — ou use um e-mail diferente.'
+      else if (lower.includes('email') && lower.includes('valid')) friendly = 'E-mail inválido.'
+      setRegError(friendly)
     } finally {
       setRegLoading(false)
     }
@@ -338,7 +343,7 @@ export default function LoginPage() {
             </div>
 
             {regError && <p className={styles.error}>{regError}</p>}
-            <p className={styles.regNote}>Ao criar sua conta você concorda com os termos de uso. Plano trial gratuito por 14 dias.</p>
+            <p className={styles.regNote}>Ao criar sua conta você concorda com os termos de uso. Plano trial gratuito por 7 dias</p>
             <button type="submit" className={styles.btn} disabled={regLoading}>
               {regLoading ? 'Criando clínica...' : 'Criar minha clínica'}
             </button>
