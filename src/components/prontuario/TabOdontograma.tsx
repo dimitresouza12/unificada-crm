@@ -10,7 +10,7 @@ const TOOTH_STATUS = [
   { key: 'restaurado', label: 'Restaurado', color: '#3b82f6' },
   { key: 'extraido', label: 'Extraído', color: '#6b7280' },
   { key: 'implante', label: 'Implante', color: '#f59e0b' },
-  { key: 'coroa', label: 'Coroa', color: '#8b5cf6' },
+  { key: 'coroa', label: 'Coroa', color: '#14B8A6' },
   { key: 'tratamento', label: 'Em Tratamento', color: '#ec4899' },
 ]
 

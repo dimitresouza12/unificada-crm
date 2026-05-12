@@ -147,7 +147,7 @@ export default function LoginPage() {
         id: clinicUser.clinic_id, name: clinicUser.clinics.name,
         type: clinicUser.clinics.clinic_type, logo: clinicUser.clinics.logo_url ?? '',
         address: clinicUser.clinics.address ?? '', phone: clinicUser.clinics.phone ?? '',
-        color: clinicUser.clinics.primary_color ?? '#7C3AED', slug: clinicUser.clinics.slug,
+        color: clinicUser.clinics.primary_color ?? '#0D9488', slug: clinicUser.clinics.slug,
       }
       const user: AuthUser = {
         id: clinicUser.user_id, role: clinicUser.role,

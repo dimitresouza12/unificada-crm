@@ -28,7 +28,7 @@
 .calHint { font-size: 0.75rem; color: var(--text-secondary); text-align: center; margin-top: 0.75rem; }
 .title { font-size: 1.55rem; font-weight: 750; color: var(--text-primary); letter-spacing: -0.4px; }
 .sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem; }
-.btnPrimary { padding: 0.6rem 1.15rem; background: linear-gradient(135deg, #7C3AED 0%, #9F67FF 100%); color: #fff; border: none; border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(124,58,237,0.25); }
+.btnPrimary { padding: 0.6rem 1.15rem; background: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%); color: #fff; border: none; border-radius: var(--radius-md); font-size: 0.875rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.15s, transform 0.1s; box-shadow: 0 2px 8px rgba(13,148,136,0.25); }
 .btnPrimary:hover { opacity: 0.9; transform: translateY(-1px); }
 .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
 .input { padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font-size: 0.875rem; outline: none; }

@@ -33,7 +33,7 @@
 .btnPrimary {
   padding: 0.6rem 1.15rem;
   background: var(--brand-primary);
-  background: linear-gradient(135deg, #7C3AED 0%, #9F67FF 100%);
+  background: linear-gradient(135deg, #0D9488 0%, #5EEAD4 100%);
   color: #fff;
   border: none;
   border-radius: var(--radius-md);
@@ -42,7 +42,7 @@
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s, transform 0.1s;
-  box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+  box-shadow: 0 2px 8px rgba(13,148,136,0.25);
 }
 .btnPrimary:hover { opacity: 0.9; transform: translateY(-1px); }
 .btnPrimary:active { transform: translateY(0); }

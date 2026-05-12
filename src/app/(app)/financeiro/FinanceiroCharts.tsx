@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import styles from './financeiro.module.css'
 
-const COLORS = ['#7C3AED', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+const COLORS = ['#0D9488', '#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#5EEAD4']
 
 interface MonthlyData { month: string; receita: number; despesa: number }
 interface CategoryData { name: string; value: number }

@@ -10,7 +10,7 @@ export default function ConfiguracoesPage() {
   const [name, setName] = useState(clinic?.name ?? '')
   const [address, setAddress] = useState(clinic?.address ?? '')
   const [phone, setPhone] = useState(clinic?.phone ?? '')
-  const [color, setColor] = useState(clinic?.color ?? '#7C3AED')
+  const [color, setColor] = useState(clinic?.color ?? '#0D9488')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -77,7 +77,7 @@ export default function ConfiguracoesPage() {
             <label>Cor principal</label>
             <div className={styles.colorRow}>
               <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className={styles.colorPicker} />
-              <input value={color} onChange={(e) => setColor(e.target.value)} className={styles.colorText} placeholder="#7C3AED" />
+              <input value={color} onChange={(e) => setColor(e.target.value)} className={styles.colorText} placeholder="#0D9488" />
             </div>
           </div>
           <div className={styles.saveRow}>

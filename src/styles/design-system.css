@@ -11,9 +11,9 @@
   --text-tertiary:  #9AA3B5;
 
   /* Brand — overridden per-clinic via --clinic-color */
-  --brand-primary:   #7C3AED;
-  --brand-secondary: #9F67FF;
-  --brand-glow:      rgba(124, 58, 237, 0.18);
+  --brand-primary:   #0D9488;
+  --brand-secondary: #5EEAD4;
+  --brand-glow:      rgba(94, 234, 212, 0.18);
 
   /* Borders & shadows */
   --border-color:  #E4E8F2;

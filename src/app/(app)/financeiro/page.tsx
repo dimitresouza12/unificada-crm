@@ -149,8 +149,8 @@ export default function FinanceiroPage() {
             <span className={styles.cardLabel}>Despesas do mês</span>
           </div>
         </div>
-        <div className={styles.card} style={{ '--c': stats.saldo >= 0 ? '#7C3AED' : '#F59E0B' } as React.CSSProperties}>
-          <div className={styles.cardIcon} style={{ background: stats.saldo >= 0 ? '#F5F3FF' : '#FFFBEB' }}>💰</div>
+        <div className={styles.card} style={{ '--c': stats.saldo >= 0 ? '#0D9488' : '#F59E0B' } as React.CSSProperties}>
+          <div className={styles.cardIcon} style={{ background: stats.saldo >= 0 ? '#F0FDFA' : '#FFFBEB' }}>💰</div>
           <div className={styles.cardBody}>
             <span className={styles.cardValue} style={{ color: stats.saldo >= 0 ? '#059669' : '#DC2626' }}>
               {formatCurrency(stats.saldo)}

@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite'
 
   const cards: { label: string; value: string | number; icon: IconName; color: string }[] = [
-    { label: 'Pacientes ativos',     value: stats.totalPatients,               icon: 'patients',  color: '#7C3AED' },
+    { label: 'Pacientes ativos',     value: stats.totalPatients,               icon: 'patients',  color: '#0D9488' },
     { label: 'Consultas hoje',       value: stats.appointmentsToday,           icon: 'calendar',  color: '#0EA5E9' },
     { label: 'Agendamentos abertos', value: stats.pendingAppointments,         icon: 'team',      color: '#F59E0B' },
     { label: 'Receita do mês',       value: formatCurrency(stats.monthRevenue),icon: 'finance',   color: '#10B981' },
