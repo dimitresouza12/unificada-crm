@@ -46,6 +46,7 @@ function toSlug(name: string) {
 
 export default function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession)
+  const clearSession = useAuthStore((s) => s.clearSession)
   const [mode, setMode] = useState<Mode>('login')
 
   // Login state
@@ -115,6 +116,7 @@ export default function LoginPage() {
     }
 
     setLoading(true)
+    clearSession()
 
     try {
       let email = cred

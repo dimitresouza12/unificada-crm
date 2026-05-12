@@ -30,7 +30,10 @@ export default function PacientesPage() {
 
   async function loadData() {
     if (!clinic) return
-    await syncLeadAppointments(clinic.id)
+    // Only sync n8n leads for the clinic that has the WhatsApp bot integration (odonto)
+    if (clinic.type === 'odonto') {
+      await syncLeadAppointments(clinic.id)
+    }
     const [apptRes, patRes] = await Promise.all([
       supabase.from('appointments').select('*, patients(id, name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }),
       supabase.from('patients').select('*').eq('clinic_id', clinic.id).eq('is_active', true).order('name'),
