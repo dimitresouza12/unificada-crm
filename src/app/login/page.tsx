@@ -23,9 +23,17 @@ interface RegisterForm {
   clinic_type: ClinicTypeValue | ''
   clinic_name: string
   admin_name: string
+  username: string
   email: string
   password: string
   phone: string
+}
+
+function normalizeUsername(raw: string) {
+  return raw
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9_.-]/g, '')
 }
 
 function toSlug(name: string) {
@@ -48,7 +56,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   // Register state
-  const BLANK_REG: RegisterForm = { clinic_type: '', clinic_name: '', admin_name: '', email: '', password: '', phone: '' }
+  const BLANK_REG: RegisterForm = { clinic_type: '', clinic_name: '', admin_name: '', username: '', email: '', password: '', phone: '' }
   const [reg, setReg] = useState<RegisterForm>(BLANK_REG)
   const [regError, setRegError] = useState('')
   const [regSuccess, setRegSuccess] = useState(false)
@@ -165,6 +173,8 @@ export default function LoginPage() {
     if (!reg.clinic_type)   return setRegError('Selecione o tipo de clínica.')
     if (!reg.clinic_name.trim()) return setRegError('Nome da clínica é obrigatório.')
     if (!reg.admin_name.trim())  return setRegError('Seu nome é obrigatório.')
+    const usernameClean = normalizeUsername(reg.username)
+    if (usernameClean.length < 3 || usernameClean.length > 30) return setRegError('Nome de usuário deve ter 3-30 caracteres (letras minúsculas, números, _ . -).')
     if (!reg.email.trim())       return setRegError('E-mail é obrigatório.')
     if (reg.password.length < 6) return setRegError('Senha deve ter pelo menos 6 caracteres.')
 
@@ -192,12 +202,14 @@ export default function LoginPage() {
         p_clinic_type: reg.clinic_type,
         p_phone: reg.phone.trim(),
         p_admin_name: reg.admin_name.trim(),
-        p_username: slug,
+        p_username: usernameClean,
         p_email: reg.email.trim(),
       })
       if (rpcErr) {
         console.error('register_clinic_and_admin error:', rpcErr)
         if (rpcErr.message.includes('slug_taken')) throw new Error('Já existe uma clínica com esse nome. Tente um nome diferente.')
+        if (rpcErr.message.includes('username_taken')) throw new Error('Esse nome de usuário já está em uso. Escolha outro.')
+        if (rpcErr.message.includes('username_invalid')) throw new Error('Nome de usuário inválido. Use 3-30 caracteres (letras minúsculas, números, _ . -).')
         if (rpcErr.message.includes('user_already_linked')) throw new Error('Este e-mail já está vinculado a uma clínica.')
         throw new Error('Erro ao criar clínica. Tente novamente.')
       }
@@ -308,6 +320,21 @@ export default function LoginPage() {
                 placeholder="Dr. João Silva"
                 required
               />
+            </div>
+
+            <div className={styles.field}>
+              <label>Nome de usuário (para login) *</label>
+              <input
+                type="text"
+                value={reg.username}
+                onChange={e => setReg(p => ({ ...p, username: normalizeUsername(e.target.value) }))}
+                placeholder="ex: drjoao"
+                autoComplete="username"
+                required
+              />
+              <span className={styles.slugHint}>
+                {reg.username ? `Login: ${reg.username}` : '3-30 caracteres: letras minúsculas, números, _ . -'}
+              </span>
             </div>
 
             <div className={styles.field}>

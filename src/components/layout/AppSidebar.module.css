@@ -22,7 +22,7 @@
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 200px;
-  background: radial-gradient(ellipse at 50% -20%, rgba(124,58,237,0.18) 0%, transparent 70%);
+  background: radial-gradient(ellipse at 50% -20%, rgba(94,234,212,0.18) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -73,13 +73,13 @@
 }
 
 .logoText {
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   color: #FFFFFF;
   letter-spacing: -0.5px;
   line-height: 1;
   white-space: nowrap;
 }
-.logoText strong { font-weight: 800; color: var(--clinic-color, #9F67FF); }
+.logoText strong { font-weight: 800; color: #5EEAD4; }
 
 .clinicName {
   font-size: 0.72rem;
@@ -165,7 +165,7 @@
   left: 0; top: 20%; bottom: 20%;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--clinic-color, #9F67FF);
+  background: #5EEAD4;
 }
 
 .iconWrap {
@@ -195,13 +195,13 @@
   width: 32px;
   height: 32px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--clinic-color, #7C3AED), #9F67FF);
+  background: linear-gradient(135deg, #0D9488, #5EEAD4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #fff;
+  color: #0a1a1f;
   flex-shrink: 0;
   letter-spacing: 0.03em;
   text-transform: uppercase;
