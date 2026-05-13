@@ -49,7 +49,15 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
   async function handleLogout() {
     await supabase.auth.signOut()
     clearSession()
-    router.replace('/login')
+    try {
+      window.localStorage.removeItem('myclinica-auth')
+      // Limpa também a sessão do Supabase Auth para evitar JWT residual
+      Object.keys(window.localStorage)
+        .filter((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach((k) => window.localStorage.removeItem(k))
+    } catch { /* ignore */ }
+    // Hard navigation para garantir reset completo de qualquer estado em memória
+    window.location.href = '/login'
   }
 
   const navItems = user.isSuperAdmin

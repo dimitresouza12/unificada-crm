@@ -35,7 +35,15 @@ export default function FinanceiroPage() {
   const [filterType, setFilterType] = useState<'todos' | 'receita' | 'despesa'>('todos')
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7))
 
-  useEffect(() => { if (clinic) loadData() }, [clinic])
+  useEffect(() => {
+    if (!clinic?.id) return
+    // Reset estado ao trocar de clínica
+    setRecords([])
+    setPatients([])
+    setLoading(true)
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinic?.id])
 
   async function loadData() {
     if (!clinic) return

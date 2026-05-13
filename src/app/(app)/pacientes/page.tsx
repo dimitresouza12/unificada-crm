@@ -25,8 +25,14 @@ export default function PacientesPage() {
   const [showNewPatient, setShowNewPatient] = useState(false)
 
   useEffect(() => {
-    if (clinic) loadData()
-  }, [clinic])
+    if (!clinic?.id) return
+    // Reset estado ao trocar de clínica para evitar exibir dados da clínica anterior
+    setAppointments([])
+    setPatients([])
+    setLoading(true)
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinic?.id])
 
   async function loadData() {
     if (!clinic) return

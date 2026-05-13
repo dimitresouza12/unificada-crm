@@ -3,6 +3,8 @@ export type UserRole = 'recepcao' | 'dentista' | 'medico' | 'admin' | 'superadmi
 export type AppointmentStatus = 'agendado' | 'confirmado' | 'concluido' | 'cancelado' | 'faltou'
 export type PaymentMethod = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito' | 'convenio' | 'outro'
 
+export type ClinicStatus = 'active' | 'inactive' | 'suspended'
+
 export interface Clinic {
   id: string
   name: string
@@ -16,6 +18,18 @@ export interface Clinic {
   plan: string | null
   max_patients: number | null
   is_active: boolean
+  status: ClinicStatus
+  created_at: string
+}
+
+export interface SystemAlert {
+  id: string
+  message: string
+  severity: 'info' | 'warning' | 'critical'
+  is_active: boolean
+  starts_at: string
+  ends_at: string | null
+  created_by: string | null
   created_at: string
 }
 

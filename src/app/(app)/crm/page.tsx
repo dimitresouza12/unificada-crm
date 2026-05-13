@@ -62,7 +62,13 @@ export default function CRMPage() {
   const [existingPatients, setExistingPatients] = useState<Set<string>>(new Set())
 
   useEffect(() => { loadLeads() }, [])
-  useEffect(() => { if (clinic) loadExistingPatients() }, [clinic])
+  useEffect(() => {
+    if (!clinic?.id) return
+    // Reset ao trocar de clínica (a lista de pacientes existentes é por clínica)
+    setExistingPatients(new Set())
+    loadExistingPatients()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinic?.id])
 
   async function loadLeads() {
     setLoading(true)

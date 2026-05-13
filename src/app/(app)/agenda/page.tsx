@@ -52,24 +52,37 @@ export default function AgendaPage() {
   const [gcalError, setGcalError] = useState('')
 
   const loadData = useCallback(async () => {
-    if (!clinic) return
-    await syncLeadAppointments(clinic.id)
+    if (!clinic?.id) return
+    const clinicId = clinic.id
+    await syncLeadAppointments(clinicId)
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
         .from('appointments')
         .select('*, patients(id, name, phone), clinic_users(id, display_name)')
-        .eq('clinic_id', clinic.id)
+        .eq('clinic_id', clinicId)
         .order('scheduled_at', { ascending: false }),
-      supabase.from('patients').select('id, name, phone').eq('clinic_id', clinic.id).eq('is_active', true).order('name'),
-      supabase.from('professionals').select('*').eq('clinic_id', clinic.id).order('name'),
+      supabase.from('patients').select('id, name, phone').eq('clinic_id', clinicId).eq('is_active', true).order('name'),
+      supabase.from('professionals').select('*').eq('clinic_id', clinicId).order('name'),
     ])
+    // Guard: descarta resultado se a clínica mudou durante o fetch
+    if (clinic?.id !== clinicId) return
     setAppointments((apptRes.data ?? []) as Appointment[])
     setPatients((patRes.data ?? []) as Patient[])
     setProfessionals((profRes.data ?? []) as Professional[])
     setLoading(false)
   }, [clinic])
 
-  useEffect(() => { if (clinic) loadData() }, [clinic, loadData])
+  useEffect(() => {
+    if (!clinic?.id) return
+    // Reset estado ao trocar de clínica
+    setAppointments([])
+    setPatients([])
+    setProfessionals([])
+    setGcalEvents([])
+    setLoading(true)
+    loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinic?.id])
 
   useEffect(() => {
     setGcalConnected(!!getGCalToken())

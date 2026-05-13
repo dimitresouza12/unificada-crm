@@ -7,10 +7,14 @@ interface AuthState {
   clinic: AuthClinic | null
   user: AuthUser | null
   _hydrated: boolean
+  impersonatedClinicId: string | null
+  impersonatedClinicName: string | null
   setSession: (clinic: AuthClinic, user: AuthUser) => void
   clearSession: () => void
   setHydrated: () => void
   setClinicLogo: (logo: string) => void
+  startImpersonation: (clinicId: string, clinicName: string) => void
+  stopImpersonation: () => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -19,10 +23,20 @@ export const useAuthStore = create<AuthState>()(
       clinic: null,
       user: null,
       _hydrated: false,
+      impersonatedClinicId: null,
+      impersonatedClinicName: null,
       setSession: (clinic, user) => set({ clinic, user }),
-      clearSession: () => set({ clinic: null, user: null }),
+      clearSession: () => {
+        set({ clinic: null, user: null, impersonatedClinicId: null, impersonatedClinicName: null })
+        if (typeof window !== 'undefined') {
+          try { window.localStorage.removeItem('myclinica-auth') } catch { /* ignore */ }
+        }
+      },
       setHydrated: () => set({ _hydrated: true }),
       setClinicLogo: (logo) => set((s) => s.clinic ? { clinic: { ...s.clinic, logo } } : {}),
+      startImpersonation: (clinicId, clinicName) =>
+        set({ impersonatedClinicId: clinicId, impersonatedClinicName: clinicName }),
+      stopImpersonation: () => set({ impersonatedClinicId: null, impersonatedClinicName: null }),
     }),
     {
       name: 'myclinica-auth',

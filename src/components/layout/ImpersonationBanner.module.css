@@ -1,0 +1,41 @@
+.banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1.5rem;
+  background: repeating-linear-gradient(
+    -45deg,
+    #FEF3C7,
+    #FEF3C7 10px,
+    #FDE68A 10px,
+    #FDE68A 20px
+  );
+  border-bottom: 2px solid #F59E0B;
+  font-size: 0.85rem;
+  color: #92400E;
+  flex-shrink: 0;
+  animation: slideBanner 0.3s ease both;
+}
+
+@keyframes slideBanner {
+  from { opacity: 0; transform: translateY(-100%); }
+  to   { opacity: 1; transform: none; }
+}
+
+.icon { font-size: 1rem; flex-shrink: 0; }
+.msg  { flex: 1; line-height: 1.4; }
+
+.exitBtn {
+  padding: 0.3rem 0.85rem;
+  background: #92400E;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.exitBtn:hover { opacity: 0.85; }

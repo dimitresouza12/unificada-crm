@@ -25,9 +25,14 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!clinic) return
+    if (!clinic?.id) return
+    // Reset estado ao trocar de clínica
+    setStats({ totalPatients: 0, appointmentsToday: 0, monthRevenue: 0, pendingAppointments: 0 })
+    setRecentAppts([])
+    setLoading(true)
     loadDashboard()
-  }, [clinic])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clinic?.id])
 
   async function loadDashboard() {
     if (!clinic) return

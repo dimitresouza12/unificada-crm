@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth'
 import { AppSidebar } from '@/components/layout/AppSidebar'
 import { TopBar } from '@/components/layout/TopBar'
+import { SystemAlertBanner } from '@/components/layout/SystemAlertBanner'
+import { ImpersonationBanner } from '@/components/layout/ImpersonationBanner'
 import styles from './app.module.css'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -34,8 +36,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       />
 
       <div className={styles.content}>
+        <ImpersonationBanner />
+        <SystemAlertBanner />
         <TopBar clinic={clinic} onMenuToggle={() => setSidebarOpen((v) => !v)} />
-        <main className={styles.main}>{children}</main>
+        {/* key={clinic.id} força remount completo das páginas quando a clínica muda,
+            descartando qualquer estado (lista de pacientes, agenda, etc.) da clínica anterior */}
+        <main key={clinic.id} className={styles.main}>{children}</main>
       </div>
     </div>
   )
