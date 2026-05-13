@@ -36,8 +36,8 @@ export default function PacientesPage() {
 
   async function loadData() {
     if (!clinic) return
-    // Only sync n8n leads for the clinic that has the WhatsApp bot integration (odonto)
-    if (clinic.type === 'odonto') {
+    // Sincroniza leads do WhatsApp/n8n apenas no plano Plus
+    if (clinic.plan === 'plus') {
       await syncLeadAppointments(clinic.id)
     }
     const [apptRes, patRes] = await Promise.all([

@@ -10,13 +10,13 @@ import type { AuthClinic, AuthUser } from '@/types'
 import styles from './AppSidebar.module.css'
 
 const NAV = [
-  { path: '/dashboard',     label: 'Dashboard',     icon: 'dashboard'  as const },
-  { path: '/pacientes',     label: 'Pacientes',     icon: 'patients'   as const },
-  { path: '/agenda',        label: 'Agenda',        icon: 'calendar'   as const },
-  { path: '/financeiro',    label: 'Financeiro',    icon: 'finance'    as const },
-  { path: '/equipe',        label: 'Equipe',        icon: 'team'       as const },
-  { path: '/crm',           label: 'CRM',           icon: 'crm'        as const },
-  { path: '/configuracoes', label: 'Configurações', icon: 'settings'   as const },
+  { path: '/dashboard',     label: 'Dashboard',     icon: 'dashboard'  as const, plusOnly: false },
+  { path: '/pacientes',     label: 'Pacientes',     icon: 'patients'   as const, plusOnly: false },
+  { path: '/agenda',        label: 'Agenda',        icon: 'calendar'   as const, plusOnly: false },
+  { path: '/financeiro',    label: 'Financeiro',    icon: 'finance'    as const, plusOnly: false },
+  { path: '/equipe',        label: 'Equipe',        icon: 'team'       as const, plusOnly: false },
+  { path: '/crm',           label: 'CRM',           icon: 'crm'        as const, plusOnly: true  },
+  { path: '/configuracoes', label: 'Configurações', icon: 'settings'   as const, plusOnly: false },
 ]
 
 interface Props {
@@ -60,9 +60,11 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
     window.location.href = '/login'
   }
 
+  const isPlus = clinic.plan === 'plus'
+  const filteredNav = NAV.filter((item) => !item.plusOnly || isPlus)
   const navItems = user.isSuperAdmin
-    ? [...NAV, { path: '/admin', label: 'Admin', icon: 'admin' as const }]
-    : NAV
+    ? [...filteredNav, { path: '/admin', label: 'Admin', icon: 'admin' as const, plusOnly: false }]
+    : filteredNav
 
   const initials = user.displayName
     .split(' ')

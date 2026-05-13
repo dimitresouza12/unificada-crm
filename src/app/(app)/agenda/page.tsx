@@ -54,7 +54,10 @@ export default function AgendaPage() {
   const loadData = useCallback(async () => {
     if (!clinic?.id) return
     const clinicId = clinic.id
-    await syncLeadAppointments(clinicId)
+    // Sincroniza leads do WhatsApp/n8n apenas no plano Plus
+    if (clinic.plan === 'plus') {
+      await syncLeadAppointments(clinicId)
+    }
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
         .from('appointments')

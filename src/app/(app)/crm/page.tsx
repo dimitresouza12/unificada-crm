@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { createN8nClient } from '@/lib/supabase-n8n'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
@@ -52,6 +53,7 @@ function fmtPhone(phone: string) {
 
 export default function CRMPage() {
   const { clinic } = useAuthStore()
+  const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Lead | null>(null)
@@ -61,14 +63,36 @@ export default function CRMPage() {
   const [convertMsg, setConvertMsg] = useState('')
   const [existingPatients, setExistingPatients] = useState<Set<string>>(new Set())
 
-  useEffect(() => { loadLeads() }, [])
+  // Gate: CRM é exclusivo do plano Plus
   useEffect(() => {
-    if (!clinic?.id) return
+    if (clinic && clinic.plan !== 'plus') {
+      router.replace('/dashboard')
+    }
+  }, [clinic, router])
+
+  useEffect(() => {
+    if (clinic && clinic.plan !== 'plus') return
+    loadLeads()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  useEffect(() => {
+    if (!clinic?.id || clinic.plan !== 'plus') return
     // Reset ao trocar de clínica (a lista de pacientes existentes é por clínica)
     setExistingPatients(new Set())
     loadExistingPatients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinic?.id])
+
+  if (clinic && clinic.plan !== 'plus') {
+    return (
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>CRM</h1>
+        </div>
+        <p className={styles.loading}>Redirecionando…</p>
+      </div>
+    )
+  }
 
   async function loadLeads() {
     setLoading(true)

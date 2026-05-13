@@ -145,11 +145,28 @@ export default function LoginPage() {
       if (cuErr) { console.error('clinic_users error:', cuErr); throw new Error('Erro ao carregar dados da clínica.') }
       if (!clinicUser || !clinicUser.clinics) throw new Error('Usuário sem clínica associada. Contate o suporte.')
 
+      // Bloqueia login se a clínica ainda está aguardando aprovação ou foi suspensa
+      const clinicStatus = clinicUser.clinics.status
+      if (clinicStatus === 'pending') {
+        await supabase.auth.signOut()
+        throw new Error('Sua clínica está aguardando aprovação do administrador. Você receberá um aviso quando for liberada.')
+      }
+      if (clinicStatus === 'suspended') {
+        await supabase.auth.signOut()
+        throw new Error('Esta clínica está suspensa. Entre em contato com o suporte para regularizar.')
+      }
+      if (clinicStatus === 'inactive') {
+        await supabase.auth.signOut()
+        throw new Error('Esta clínica está inativa.')
+      }
+
       const clinic: AuthClinic = {
         id: clinicUser.clinic_id, name: clinicUser.clinics.name,
         type: clinicUser.clinics.clinic_type, logo: clinicUser.clinics.logo_url ?? '',
         address: clinicUser.clinics.address ?? '', phone: clinicUser.clinics.phone ?? '',
         color: clinicUser.clinics.primary_color ?? '#0D9488', slug: clinicUser.clinics.slug,
+        plan: (clinicUser.clinics.plan === 'plus' ? 'plus' : 'basico'),
+        status: clinicStatus,
       }
       const user: AuthUser = {
         id: clinicUser.user_id, role: clinicUser.role,
@@ -270,14 +287,14 @@ export default function LoginPage() {
           </form>
         ) : regSuccess ? (
           <div className={styles.successBox}>
-            <div className={styles.successIcon}>✓</div>
-            <h3 className={styles.successTitle}>Clínica criada!</h3>
+            <div className={styles.successIcon}>⏳</div>
+            <h3 className={styles.successTitle}>Solicitação enviada!</h3>
             <p className={styles.successMsg}>
-              Sua clínica foi cadastrada com sucesso.<br />
-              Faça login para acessar o painel.
+              Seu cadastro foi recebido e está <strong>aguardando aprovação</strong> do administrador.<br /><br />
+              Você poderá acessar o painel assim que sua clínica for aprovada — basta tentar fazer login novamente.
             </p>
             <button className={styles.btnOutline} onClick={() => { setMode('login'); setRegSuccess(false); setReg(BLANK_REG) }}>
-              Fazer login
+              Voltar ao login
             </button>
           </div>
         ) : (

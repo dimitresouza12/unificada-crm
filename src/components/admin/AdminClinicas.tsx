@@ -39,6 +39,18 @@ export function AdminClinicas({ clinics, onReload }: Props) {
     router.push('/dashboard')
   }
 
+  async function handleApprove(c: Clinic) {
+    if (!confirm(`Aprovar a clínica "${c.name}"?`)) return
+    await supabase.from('clinics').update({ status: 'active', is_active: true }).eq('id', c.id)
+    onReload()
+  }
+
+  async function handleReject(c: Clinic) {
+    if (!confirm(`Rejeitar e marcar como inativa a clínica "${c.name}"?`)) return
+    await supabase.from('clinics').update({ status: 'inactive', is_active: false }).eq('id', c.id)
+    onReload()
+  }
+
   function triggerLogoUpload(clinic: Clinic) {
     pendingClinicRef.current = clinic
     fileInputRef.current?.click()
@@ -78,7 +90,8 @@ export function AdminClinicas({ clinics, onReload }: Props) {
     onReload()
   }
 
-  const PLAN_COLORS: Record<string, string> = { trial: '#A855F7', basico: '#0D9488', pro: '#0EA5E9', premium: '#F59E0B' }
+  const PLAN_COLORS: Record<string, string> = { basico: '#0D9488', plus: '#F59E0B' }
+  const pendingCount = clinics.filter(c => c.status === 'pending').length
 
   return (
     <>
@@ -94,10 +107,16 @@ export function AdminClinicas({ clinics, onReload }: Props) {
           />
           <select className={styles.selectFilter} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">Todos os status</option>
+            <option value="pending">⏳ Pendentes (novas)</option>
             <option value="active">Ativa</option>
             <option value="inactive">Inativa</option>
             <option value="suspended">Suspensa</option>
           </select>
+          {pendingCount > 0 && filterStatus !== 'pending' && (
+            <button className={styles.pendingAlert} onClick={() => setFilterStatus('pending')}>
+              🔔 {pendingCount} aguardando aprovação
+            </button>
+          )}
         </div>
         <button className={styles.btnPrimary} onClick={() => setShowNewModal(true)}>+ Nova Clínica</button>
       </div>
@@ -145,15 +164,28 @@ export function AdminClinicas({ clinics, onReload }: Props) {
                 <td className={styles.dateCell}>{formatDate(c.created_at, true)}</td>
                 <td>
                   <div className={styles.rowActions}>
-                    <button className={styles.actionBtn} onClick={() => triggerLogoUpload(c)} disabled={uploadingId === c.id} title="Upload logo">
-                      {uploadingId === c.id ? '...' : '↑'}
-                    </button>
-                    <button className={styles.actionBtnSecondary} onClick={() => setEditTarget(c)} title="Editar plano/status">
-                      Editar
-                    </button>
-                    <button className={styles.actionBtnImpersonate} onClick={() => handleImpersonate(c)} title="Visualizar como esta clínica">
-                      👁 Ver como
-                    </button>
+                    {c.status === 'pending' ? (
+                      <>
+                        <button className={styles.actionBtnApprove} onClick={() => handleApprove(c)} title="Aprovar cadastro">
+                          ✓ Aprovar
+                        </button>
+                        <button className={styles.actionBtnReject} onClick={() => handleReject(c)} title="Rejeitar cadastro">
+                          ✕ Rejeitar
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button className={styles.actionBtn} onClick={() => triggerLogoUpload(c)} disabled={uploadingId === c.id} title="Upload logo">
+                          {uploadingId === c.id ? '...' : '↑'}
+                        </button>
+                        <button className={styles.actionBtnSecondary} onClick={() => setEditTarget(c)} title="Editar plano/status">
+                          Editar
+                        </button>
+                        <button className={styles.actionBtnImpersonate} onClick={() => handleImpersonate(c)} title="Visualizar como esta clínica">
+                          👁 Ver como
+                        </button>
+                      </>
+                    )}
                   </div>
                   {uploadMsg?.id === c.id && (
                     <p className={uploadMsg.ok ? styles.msgOk : styles.msgErr}>{uploadMsg.text}</p>

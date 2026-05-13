@@ -3,7 +3,8 @@ export type UserRole = 'recepcao' | 'dentista' | 'medico' | 'admin' | 'superadmi
 export type AppointmentStatus = 'agendado' | 'confirmado' | 'concluido' | 'cancelado' | 'faltou'
 export type PaymentMethod = 'dinheiro' | 'pix' | 'cartao_credito' | 'cartao_debito' | 'convenio' | 'outro'
 
-export type ClinicStatus = 'active' | 'inactive' | 'suspended'
+export type ClinicStatus = 'active' | 'inactive' | 'suspended' | 'pending'
+export type ClinicPlan = 'basico' | 'plus'
 
 export interface Clinic {
   id: string
@@ -116,6 +117,7 @@ export interface RecordEntry {
   author_name: string | null
   entry_text: string
   entry_type: string
+  photo_url: string | null
   created_at: string
 }
 
@@ -198,6 +200,8 @@ export interface AuthClinic {
   phone: string
   color: string
   slug: string
+  plan: ClinicPlan
+  status: ClinicStatus
 }
 
 export interface AuthUser {

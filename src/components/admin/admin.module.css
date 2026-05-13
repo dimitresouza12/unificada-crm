@@ -68,12 +68,19 @@
 .actionBtnSecondary:hover { background:var(--brand-primary); color:#fff; }
 .actionBtnImpersonate { padding:0.3rem 0.75rem; font-size:0.78rem; border:1px solid #F59E0B; background:none; border-radius:var(--radius-sm); cursor:pointer; color:#D97706; transition:all 0.15s; }
 .actionBtnImpersonate:hover { background:#FEF3C7; }
+.actionBtnApprove { padding:0.3rem 0.85rem; font-size:0.78rem; font-weight:600; border:none; background:linear-gradient(135deg,#10B981,#34D399); color:#fff; border-radius:var(--radius-sm); cursor:pointer; transition:all 0.15s; box-shadow:0 2px 6px rgba(16,185,129,0.3); }
+.actionBtnApprove:hover { transform:translateY(-1px); opacity:0.92; }
+.actionBtnReject { padding:0.3rem 0.75rem; font-size:0.78rem; border:1px solid #FCA5A5; background:none; border-radius:var(--radius-sm); cursor:pointer; color:#DC2626; transition:all 0.15s; }
+.actionBtnReject:hover { background:#FEE2E2; }
+.pendingAlert { padding:0.5rem 0.85rem; background:#FEF3C7; border:1px solid #FCD34D; border-radius:var(--radius-md); font-size:0.82rem; color:#92400E; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.pendingAlert:hover { background:#FDE68A; }
 
 /* ========== Status pills ========== */
 .statusPill { font-size:0.75rem; font-weight:600; padding:3px 10px; border-radius:999px; display:inline-block; }
 .statusActive { background:#D1FAE5; color:#065F46; }
 .statusInactive { background:#F3F4F6; color:#6B7280; }
 .statusSuspended { background:#FEE2E2; color:#991B1B; }
+.statusPending { background:#FEF3C7; color:#92400E; }
 
 /* ========== Status buttons (in edit modal) ========== */
 .statusBtnGroup { display:flex; gap:0.5rem; flex-wrap:wrap; }
@@ -84,10 +91,11 @@
 .statusChoice_suspended.statusChoiceBtnActive { background:#FEE2E2; color:#991B1B; border-color:#FECACA; }
 
 /* ========== Plan grid (in edit modal) ========== */
-.planGrid { display:flex; gap:0.5rem; flex-wrap:wrap; }
-.planBtn { padding:0.4rem 0.85rem; border:1px solid var(--border-color); background:none; border-radius:var(--radius-md); font-size:0.82rem; cursor:pointer; color:var(--text-secondary); transition:all 0.15s; text-transform:capitalize; }
+.planGrid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; }
+.planBtn { display:flex; flex-direction:column; gap:0.2rem; padding:0.85rem 1rem; border:1px solid var(--border-color); background:none; border-radius:var(--radius-md); font-size:0.95rem; font-weight:600; cursor:pointer; color:var(--text-secondary); transition:all 0.15s; text-align:left; }
 .planBtn:hover { border-color:var(--brand-primary); color:var(--brand-primary); }
-.planBtnActive { background:var(--brand-primary); color:#fff !important; border-color:var(--brand-primary) !important; font-weight:600; }
+.planBtnActive { background:var(--brand-primary); color:#fff !important; border-color:var(--brand-primary) !important; }
+.planHint { font-size:0.7rem; font-weight:400; opacity:0.85; text-transform:none; }
 
 /* ========== Logs ========== */
 .logsWrap { display:flex; flex-direction:column; gap:1rem; }

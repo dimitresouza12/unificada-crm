@@ -4,9 +4,13 @@ import { supabase } from '@/lib/supabase'
 import type { Clinic, ClinicStatus } from '@/types'
 import styles from './admin.module.css'
 
-const PLANS = ['trial', 'basico', 'pro', 'premium']
+const PLANS: { value: string; label: string; hint: string }[] = [
+  { value: 'basico', label: 'Básico', hint: 'Gestão clínica completa' },
+  { value: 'plus',   label: 'Plus',   hint: 'Inclui integração WhatsApp + CRM' },
+]
 const STATUSES: { value: ClinicStatus; label: string }[] = [
   { value: 'active',    label: 'Ativa' },
+  { value: 'pending',   label: 'Pendente (aguardando aprovação)' },
   { value: 'inactive',  label: 'Inativa' },
   { value: 'suspended', label: 'Suspensa (inadimplência)' },
 ]
@@ -29,7 +33,12 @@ export function ClinicEditModal({ clinic, onClose, onSaved }: Props) {
     setError('')
     const { error: err } = await supabase
       .from('clinics')
-      .update({ plan, max_patients: maxPatients, status, is_active: status === 'active' })
+      .update({
+        plan,
+        max_patients: maxPatients,
+        status,
+        is_active: status === 'active',
+      })
       .eq('id', clinic.id)
     if (err) { setError(err.message); setSaving(false); return }
     onSaved()
@@ -49,12 +58,14 @@ export function ClinicEditModal({ clinic, onClose, onSaved }: Props) {
             <div className={styles.planGrid}>
               {PLANS.map((p) => (
                 <button
-                  key={p}
+                  key={p.value}
                   type="button"
-                  className={`${styles.planBtn} ${plan === p ? styles.planBtnActive : ''}`}
-                  onClick={() => setPlan(p)}
+                  className={`${styles.planBtn} ${plan === p.value ? styles.planBtnActive : ''}`}
+                  onClick={() => setPlan(p.value)}
+                  title={p.hint}
                 >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                  <span>{p.label}</span>
+                  <span className={styles.planHint}>{p.hint}</span>
                 </button>
               ))}
             </div>

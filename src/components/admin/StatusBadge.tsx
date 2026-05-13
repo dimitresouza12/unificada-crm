@@ -6,6 +6,7 @@ const STATUS_MAP: Record<ClinicStatus, { label: string; cls: string }> = {
   active:    { label: 'Ativa',    cls: styles.statusActive },
   inactive:  { label: 'Inativa',  cls: styles.statusInactive },
   suspended: { label: 'Suspensa', cls: styles.statusSuspended },
+  pending:   { label: 'Pendente', cls: styles.statusPending },
 }
 
 export function StatusBadge({ status }: { status: ClinicStatus }) {
