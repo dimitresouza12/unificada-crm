@@ -28,9 +28,6 @@ export const useAuthStore = create<AuthState>()(
       setSession: (clinic, user) => set({ clinic, user }),
       clearSession: () => {
         set({ clinic: null, user: null, impersonatedClinicId: null, impersonatedClinicName: null })
-        if (typeof window !== 'undefined') {
-          try { window.localStorage.removeItem('myclinica-auth') } catch { /* ignore */ }
-        }
       },
       setHydrated: () => set({ _hydrated: true }),
       setClinicLogo: (logo) => set((s) => s.clinic ? { clinic: { ...s.clinic, logo } } : {}),
