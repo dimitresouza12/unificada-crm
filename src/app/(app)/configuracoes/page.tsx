@@ -10,7 +10,6 @@ export default function ConfiguracoesPage() {
   const [name, setName] = useState(clinic?.name ?? '')
   const [address, setAddress] = useState(clinic?.address ?? '')
   const [phone, setPhone] = useState(clinic?.phone ?? '')
-  const [color, setColor] = useState(clinic?.color ?? '#0D9488')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -26,8 +25,8 @@ export default function ConfiguracoesPage() {
     e.preventDefault()
     if (!clinic) return
     setSaving(true)
-    await supabase.from('clinics').update({ name, address, phone, primary_color: color }).eq('id', clinic.id)
-    setSession({ ...clinic, name, address, phone, color }, user!)
+    await supabase.from('clinics').update({ name, address, phone }).eq('id', clinic.id)
+    setSession({ ...clinic, name, address, phone }, user!)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
     setSaving(false)
@@ -72,13 +71,6 @@ export default function ConfiguracoesPage() {
           <div className={styles.field}>
             <label>Endereço</label>
             <input value={address} onChange={(e) => setAddress(e.target.value)} />
-          </div>
-          <div className={styles.field}>
-            <label>Cor principal</label>
-            <div className={styles.colorRow}>
-              <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className={styles.colorPicker} />
-              <input value={color} onChange={(e) => setColor(e.target.value)} className={styles.colorText} placeholder="#0D9488" />
-            </div>
           </div>
           <div className={styles.saveRow}>
             {saved && <span className={styles.savedMsg}>✓ Salvo!</span>}
@@ -127,7 +119,7 @@ export default function ConfiguracoesPage() {
           <InfoRow label="Usuário" value={user?.displayName ?? '-'} />
           <InfoRow label="Função" value={user?.role ?? '-'} />
           <InfoRow label="Clínica ID" value={clinic?.id ?? '-'} mono />
-          <InfoRow label="Plano" value="Básico" />
+          <InfoRow label="Plano" value={clinic?.plan === 'plus' ? 'Plus' : 'Básico'} />
         </div>
       </div>
     </div>

@@ -68,3 +68,11 @@
 .btnSaveReceita:disabled { opacity:.5; cursor:not-allowed; }
 .btnSaveDespesa { padding:.55rem 1.25rem; background:linear-gradient(135deg,#B91C1C,#EF4444); color:#fff; border:none; border-radius:var(--radius-md); font-size:.875rem; font-weight:600; cursor:pointer; }
 .btnSaveDespesa:disabled { opacity:.5; cursor:not-allowed; }
+
+/* Row actions (edit/delete) */
+.rowActions { display:flex; gap:0.4rem; align-items:center; }
+.btnEdit { padding:0.3rem 0.55rem; border:1px solid var(--border-color); background:none; border-radius:var(--radius-sm); cursor:pointer; color:var(--text-secondary); font-size:0.9rem; line-height:1; transition:all 0.15s; }
+.btnEdit:hover { border-color:var(--brand-primary); color:var(--brand-primary); background:rgba(13,148,136,0.06); }
+.btnDelete { padding:0.3rem 0.55rem; border:1px solid var(--border-color); background:none; border-radius:var(--radius-sm); cursor:pointer; color:var(--text-secondary); font-size:0.9rem; line-height:1; transition:all 0.15s; }
+.btnDelete:hover:not(:disabled) { border-color:#FCA5A5; color:#DC2626; background:#FEF2F2; }
+.btnDelete:disabled { opacity:0.5; cursor:wait; }

@@ -30,8 +30,10 @@ export default function FinanceiroPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<'receita' | 'despesa'>('receita')
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<NewRecord>(BLANK)
   const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<'todos' | 'receita' | 'despesa'>('todos')
   const [filterMonth, setFilterMonth] = useState(() => new Date().toISOString().slice(0, 7))
 
@@ -104,14 +106,35 @@ export default function FinanceiroPage() {
 
   function openModal(type: 'receita' | 'despesa') {
     setModalType(type)
+    setEditingId(null)
     setForm({ ...BLANK, type, category: type === 'receita' ? 'Consulta' : 'Material' })
     setShowModal(true)
+  }
+
+  function openEdit(record: FinancialRecord) {
+    setModalType(record.type)
+    setEditingId(record.id)
+    setForm({
+      type: record.type,
+      patient_id: record.patient_id ?? '',
+      total_amount: String(record.total_amount ?? ''),
+      payment_method: record.payment_method ?? 'pix',
+      category: record.category ?? '',
+      notes: record.notes ?? '',
+    })
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingId(null)
+    setForm(BLANK)
   }
 
   async function handleSave() {
     if (!clinic) return
     setSaving(true)
-    await supabase.from('financial_records').insert([{
+    const payload = {
       clinic_id: clinic.id,
       patient_id: form.patient_id || null,
       total_amount: parseFloat(form.total_amount) || 0,
@@ -119,10 +142,22 @@ export default function FinanceiroPage() {
       category: form.category,
       notes: form.notes,
       type: form.type,
-    }])
+    }
+    if (editingId) {
+      await supabase.from('financial_records').update(payload).eq('id', editingId)
+    } else {
+      await supabase.from('financial_records').insert([payload])
+    }
     setSaving(false)
-    setShowModal(false)
-    setForm(BLANK)
+    closeModal()
+    loadData()
+  }
+
+  async function handleDelete(record: FinancialRecord) {
+    if (!confirm(`Excluir este lançamento de ${formatCurrency(record.total_amount ?? 0)}? Esta ação não pode ser desfeita.`)) return
+    setDeletingId(record.id)
+    await supabase.from('financial_records').delete().eq('id', record.id)
+    setDeletingId(null)
     loadData()
   }
 
@@ -207,11 +242,12 @@ export default function FinanceiroPage() {
                   <th>Descrição</th>
                   <th>Método</th>
                   <th>Valor</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={7} className={styles.empty}>Nenhum lançamento encontrado.</td></tr>
+                  <tr><td colSpan={8} className={styles.empty}>Nenhum lançamento encontrado.</td></tr>
                 ) : filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
@@ -227,6 +263,21 @@ export default function FinanceiroPage() {
                     <td className={r.type === 'receita' ? styles.valuePos : styles.valueNeg}>
                       {r.type === 'despesa' ? '−' : '+'}{formatCurrency(r.total_amount ?? 0)}
                     </td>
+                    <td>
+                      <div className={styles.rowActions}>
+                        <button className={styles.btnEdit} onClick={() => openEdit(r)} title="Editar lançamento">
+                          ✎
+                        </button>
+                        <button
+                          className={styles.btnDelete}
+                          onClick={() => handleDelete(r)}
+                          disabled={deletingId === r.id}
+                          title="Excluir lançamento"
+                        >
+                          {deletingId === r.id ? '...' : '🗑'}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -237,11 +288,15 @@ export default function FinanceiroPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className={styles.overlay} onClick={() => setShowModal(false)}>
+        <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h2>{form.type === 'receita' ? '📈 Nova Receita' : '📉 Nova Despesa'}</h2>
-              <button className={styles.btnClose} onClick={() => setShowModal(false)}>✕</button>
+              <h2>
+                {editingId
+                  ? `${form.type === 'receita' ? '📈 Editar Receita' : '📉 Editar Despesa'}`
+                  : `${form.type === 'receita' ? '📈 Nova Receita' : '📉 Nova Despesa'}`}
+              </h2>
+              <button className={styles.btnClose} onClick={closeModal}>✕</button>
             </div>
             <div className={styles.modalBody}>
               <div className={styles.field}>
@@ -281,10 +336,10 @@ export default function FinanceiroPage() {
               </div>
             </div>
             <div className={styles.modalFooter}>
-              <button className={styles.btnCancel} onClick={() => setShowModal(false)}>Cancelar</button>
+              <button className={styles.btnCancel} onClick={closeModal}>Cancelar</button>
               <button className={form.type === 'receita' ? styles.btnSaveReceita : styles.btnSaveDespesa}
                 onClick={handleSave} disabled={saving || !form.total_amount}>
-                {saving ? 'Salvando...' : 'Salvar'}
+                {saving ? 'Salvando...' : (editingId ? 'Salvar alterações' : 'Salvar')}
               </button>
             </div>
           </div>
