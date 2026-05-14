@@ -38,7 +38,7 @@ export default function DashboardPage() {
     if (!clinic) return
     // Sincroniza leads do WhatsApp/n8n apenas no plano Plus
     if (clinic.plan === 'plus') {
-      await syncLeadAppointments(clinic.id)
+      await syncLeadAppointments(clinic.id, clinic.slug)
     }
     const today = new Date()
     const now = new Date().toISOString()

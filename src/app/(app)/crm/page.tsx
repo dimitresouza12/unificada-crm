@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createN8nClient } from '@/lib/supabase-n8n'
+import { n8nClient } from '@/lib/supabase-n8n'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import { Portal } from '@/components/ui/Portal'
@@ -71,10 +71,11 @@ export default function CRMPage() {
   }, [clinic, router])
 
   useEffect(() => {
-    if (clinic && clinic.plan !== 'plus') return
+    if (!clinic?.id || clinic.plan !== 'plus') return
+    setLeads([])
     loadLeads()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [clinic?.id])
   useEffect(() => {
     if (!clinic?.id || clinic.plan !== 'plus') return
     // Reset ao trocar de clínica (a lista de pacientes existentes é por clínica)
@@ -95,16 +96,22 @@ export default function CRMPage() {
   }
 
   async function loadLeads() {
+    if (!clinic?.id) return
     setLoading(true)
-    const n8n = createN8nClient()
-    const { data } = await n8n
-      .from('chats')
-      .select('*')
-      .order('created_at', { ascending: false })
-    const rows = (data ?? []) as Lead[]
-    // filter out invalid entries (phone = "=")
-    setLeads(rows.filter(r => r.phone && r.phone !== '=' && r.phone.length > 5))
-    setLoading(false)
+    try {
+      const slug = clinic.slug ?? ''
+      const { data, error } = await n8nClient
+        .from('chats')
+        .select('*')
+        .eq('clinic_slug', slug)
+        .order('created_at', { ascending: false })
+      if (error) console.error('[CRM] chats query error:', error)
+      console.log('[CRM] slug:', slug, '| rows:', data?.length ?? 0)
+      const rows = (data ?? []) as Lead[]
+      setLeads(rows.filter(r => r.phone && r.phone !== '=' && r.phone.length > 5))
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function loadExistingPatients() {
@@ -118,9 +125,8 @@ export default function CRMPage() {
     setSelected(lead)
     setConvertMsg('')
     setMsgLoading(true)
-    const n8n = createN8nClient()
     // Filter by conversation_id (unique per lead) — phone is unreliable due to format variants
-    const { data } = await n8n
+    const { data } = await n8nClient
       .from('chat_messages')
       .select('*')
       .eq('conversation_id', lead.conversation_id)

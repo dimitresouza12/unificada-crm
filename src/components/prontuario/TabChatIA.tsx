@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { createN8nClient } from '@/lib/supabase-n8n'
+import { n8nClient } from '@/lib/supabase-n8n'
 import styles from './TabChatIA.module.css'
 
 interface Message {
@@ -34,11 +34,9 @@ export function TabChatIA({ phone }: { phone: string | null }) {
     }
 
     const phoneClean = String(phone).replace(/\D/g, '')
-    const n8n = createN8nClient()
-
     try {
       // Try chat_messages first
-      const { data: msgData, error: msgErr } = await n8n
+      const { data: msgData, error: msgErr } = await n8nClient
         .from('chat_messages')
         .select('*')
         .or(`phone.eq.${phoneClean},phone.eq.55${phoneClean}`)
@@ -58,7 +56,7 @@ export function TabChatIA({ phone }: { phone: string | null }) {
       }
 
       // Fallback: n8n_chat_histories
-      const { data: histData, error: histErr } = await n8n
+      const { data: histData, error: histErr } = await n8nClient
         .from('n8n_chat_histories')
         .select('*')
         .or(`session_id.eq.${phoneClean},session_id.eq.55${phoneClean}`)

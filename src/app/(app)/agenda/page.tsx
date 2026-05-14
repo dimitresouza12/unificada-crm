@@ -56,7 +56,7 @@ export default function AgendaPage() {
     const clinicId = clinic.id
     // Sincroniza leads do WhatsApp/n8n apenas no plano Plus
     if (clinic.plan === 'plus') {
-      await syncLeadAppointments(clinicId)
+      await syncLeadAppointments(clinicId, clinic.slug)
     }
     const [apptRes, patRes, profRes] = await Promise.all([
       supabase
@@ -194,7 +194,7 @@ export default function AgendaPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    await supabase.from('appointments').update({ status }).eq('id', id)
+    await supabase.from('appointments').update({ status }).eq('id', id).eq('clinic_id', clinic!.id)
     loadData()
     setSelected(null)
   }

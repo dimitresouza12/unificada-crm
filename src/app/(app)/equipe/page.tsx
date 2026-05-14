@@ -57,7 +57,7 @@ export default function EquipePage() {
   async function handleDelete(id: string) {
     if (!confirm('Remover profissional?')) return
     // supabase singleton
-    await supabase.from('professionals').delete().eq('id', id)
+    await supabase.from('professionals').delete().eq('id', id).eq('clinic_id', clinic!.id)
     loadData()
   }
 

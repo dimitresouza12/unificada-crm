@@ -38,7 +38,7 @@ export default function PacientesPage() {
     if (!clinic) return
     // Sincroniza leads do WhatsApp/n8n apenas no plano Plus
     if (clinic.plan === 'plus') {
-      await syncLeadAppointments(clinic.id)
+      await syncLeadAppointments(clinic.id, clinic.slug)
     }
     const [apptRes, patRes] = await Promise.all([
       supabase.from('appointments').select('*, patients(id, name, phone)').eq('clinic_id', clinic.id).order('scheduled_at', { ascending: false }),

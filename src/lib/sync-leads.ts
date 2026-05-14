@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { createN8nClient } from '@/lib/supabase-n8n'
+import { n8nClient } from '@/lib/supabase-n8n'
 import { cleanPhone } from '@/lib/utils'
 
 function parseN8nDate(raw: string): string | null {
@@ -14,11 +14,11 @@ function parseN8nDate(raw: string): string | null {
   return null
 }
 
-export async function syncLeadAppointments(clinicId: string) {
-  const n8n = createN8nClient()
-  const { data: leads } = await n8n
+export async function syncLeadAppointments(clinicId: string, clinicSlug: string) {
+  const { data: leads } = await n8nClient
     .from('chats')
     .select('phone, nome, procedimento, data_agendamento')
+    .eq('clinic_slug', clinicSlug)
     .eq('status', 'Agendado')
     .not('data_agendamento', 'is', null)
 
