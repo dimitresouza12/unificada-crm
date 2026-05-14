@@ -4,7 +4,7 @@ type IconName =
   | 'dashboard' | 'patients' | 'calendar' | 'finance'
   | 'team' | 'settings' | 'admin' | 'logout'
   | 'sun' | 'moon' | 'chevronLeft' | 'chevronRight' | 'menu'
-  | 'crm'
+  | 'crm' | 'stock'
 
 const PATHS: Record<IconName, string> = {
   dashboard:    'M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z',
@@ -21,6 +21,7 @@ const PATHS: Record<IconName, string> = {
   chevronRight: 'M9 18l6-6-6-6',
   menu:         'M3 12h18M3 6h18M3 18h18',
   crm:          'M22 12h-4l-3 9L9 3l-3 9H2',
+  stock:        'M5 8h14M5 8a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v0a2 2 0 01-2 2M5 8l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M10 12h4',
 }
 
 interface Props extends SVGProps<SVGSVGElement> {

@@ -190,6 +190,34 @@ export interface N8nChatHistory {
   }
 }
 
+export interface StockItem {
+  id: string
+  clinic_id: string
+  name: string
+  category: string | null
+  unit: string
+  quantity: number
+  min_quantity: number
+  cost_price: number | null
+  supplier: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface StockMovement {
+  id: string
+  clinic_id: string
+  item_id: string
+  type: 'entrada' | 'saida' | 'ajuste'
+  quantity: number
+  reason: string | null
+  user_name: string | null
+  created_at: string
+  stock_items?: Pick<StockItem, 'id' | 'name' | 'unit'>
+}
+
 // Auth store types
 export interface AuthClinic {
   id: string
