@@ -64,8 +64,8 @@
 .badgeAjuste { display:inline-flex; align-items:center; padding:2px 8px; background:var(--bg-tertiary); color:var(--text-secondary); border-radius:var(--radius-full); font-size:0.72rem; font-weight:600; white-space:nowrap; }
 
 /* Modal */
-.overlay { position:fixed; inset:0; background:rgba(13,17,23,.6); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:100; padding:1rem; }
-.modal { background:var(--bg-primary); border:1px solid var(--border-subtle); border-radius:var(--radius-xl); width:100%; max-width:520px; box-shadow:var(--shadow-xl); animation:slideUp .25s cubic-bezier(.22,1,.36,1) both; max-height:90vh; overflow-y:auto; }
+.overlay { position:fixed; inset:0; background:rgba(13,17,23,.6); backdrop-filter:blur(4px); display:flex; align-items:flex-start; justify-content:center; z-index:100; padding:1.5rem 1rem; overflow-y:auto; }
+.modal { background:var(--bg-primary); border:1px solid var(--border-subtle); border-radius:var(--radius-xl); width:100%; max-width:520px; box-shadow:var(--shadow-xl); animation:slideUp .25s cubic-bezier(.22,1,.36,1) both; margin:auto; }
 @keyframes slideUp { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:none; } }
 .modalHeader { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--border-color); position:sticky; top:0; background:var(--bg-primary); z-index:1; }
 .modalHeader h2 { font-size:1rem; font-weight:700; }
