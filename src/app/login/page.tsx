@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
 import type { Clinic, ClinicUser, AuthClinic, AuthUser } from '@/types'
@@ -19,6 +20,13 @@ const CLINIC_TYPES = [
 
 type ClinicTypeValue = typeof CLINIC_TYPES[number]['value']
 
+const PLANS = [
+  { value: 'basico', label: 'Básico', desc: 'Agenda, pacientes, financeiro e estoque', emoji: '🌱' },
+  { value: 'plus',   label: 'Plus',   desc: 'Tudo do Básico + CRM e integração WhatsApp IA', emoji: '⭐' },
+] as const
+
+type PlanValue = typeof PLANS[number]['value']
+
 interface RegisterForm {
   clinic_type: ClinicTypeValue | ''
   clinic_name: string
@@ -27,6 +35,7 @@ interface RegisterForm {
   email: string
   password: string
   phone: string
+  plan: PlanValue
 }
 
 function normalizeUsername(raw: string) {
@@ -47,7 +56,10 @@ function toSlug(name: string) {
 export default function LoginPage() {
   const setSession = useAuthStore((s) => s.setSession)
   const clearSession = useAuthStore((s) => s.clearSession)
-  const [mode, setMode] = useState<Mode>('login')
+  const searchParams = useSearchParams()
+  const [mode, setMode] = useState<Mode>(() =>
+    searchParams.get('mode') === 'register' ? 'register' : 'login'
+  )
 
   // Login state
   const [credential, setCredential] = useState('')
@@ -57,7 +69,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   // Register state
-  const BLANK_REG: RegisterForm = { clinic_type: '', clinic_name: '', admin_name: '', username: '', email: '', password: '', phone: '' }
+  const BLANK_REG: RegisterForm = { clinic_type: '', clinic_name: '', admin_name: '', username: '', email: '', password: '', phone: '', plan: 'basico' }
   const [reg, setReg] = useState<RegisterForm>(BLANK_REG)
   const [regError, setRegError] = useState('')
   const [regSuccess, setRegSuccess] = useState(false)
@@ -189,6 +201,7 @@ export default function LoginPage() {
     e.preventDefault()
     setRegError('')
 
+    if (!reg.plan)           return setRegError('Selecione o plano.')
     if (!reg.clinic_type)   return setRegError('Selecione o tipo de clínica.')
     if (!reg.clinic_name.trim()) return setRegError('Nome da clínica é obrigatório.')
     if (!reg.admin_name.trim())  return setRegError('Seu nome é obrigatório.')
@@ -223,6 +236,7 @@ export default function LoginPage() {
         p_admin_name: reg.admin_name.trim(),
         p_username: usernameClean,
         p_email: reg.email.trim(),
+        p_plan: reg.plan,
       })
       if (rpcErr) {
         console.error('register_clinic_and_admin error:', rpcErr)
@@ -299,6 +313,24 @@ export default function LoginPage() {
           </div>
         ) : (
           <form onSubmit={handleRegister} className={styles.form}>
+            <div className={styles.field}>
+              <label>Escolha seu plano *</label>
+              <div className={styles.planGrid}>
+                {PLANS.map(p => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`${styles.planCard} ${reg.plan === p.value ? styles.planCardActive : ''}`}
+                    onClick={() => setReg(prev => ({ ...prev, plan: p.value }))}
+                  >
+                    <span className={styles.planEmoji}>{p.emoji}</span>
+                    <span className={styles.planLabel}>{p.label}</span>
+                    <span className={styles.planDesc}>{p.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className={styles.field}>
               <label>Tipo de clínica *</label>
               <div className={styles.typeGrid}>

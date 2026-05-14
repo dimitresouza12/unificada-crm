@@ -166,6 +166,9 @@ export function AdminClinicas({ clinics, onReload }: Props) {
                   <div className={styles.rowActions}>
                     {c.status === 'pending' ? (
                       <>
+                        <span className={styles.planPillPending} style={{ background: `${PLAN_COLORS[c.plan ?? 'basico']}22`, color: PLAN_COLORS[c.plan ?? 'basico'], borderColor: `${PLAN_COLORS[c.plan ?? 'basico']}55` }}>
+                          Plano: {c.plan ?? 'basico'}
+                        </span>
                         <button className={styles.actionBtnApprove} onClick={() => handleApprove(c)} title="Aprovar cadastro">
                           ✓ Aprovar
                         </button>

@@ -58,6 +58,7 @@
 .clinicSlug { font-size:0.72rem; color:var(--text-tertiary); background:var(--bg-secondary); padding:1px 5px; border-radius:4px; }
 .typeChip { font-size:0.72rem; padding:2px 8px; border-radius:999px; background:var(--bg-secondary); color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.04em; }
 .planPill { font-size:0.75rem; font-weight:600; padding:3px 10px; border-radius:999px; border:1px solid; text-transform:capitalize; }
+.planPillPending { font-size:0.72rem; font-weight:700; padding:3px 10px; border-radius:999px; border:1px solid; text-transform:capitalize; white-space:nowrap; }
 .patientCount { font-weight:600; font-size:0.875rem; }
 
 /* ========== Row actions ========== */

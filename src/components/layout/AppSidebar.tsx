@@ -131,6 +131,29 @@ export function AppSidebar({ clinic, user, mobileOpen = false, onMobileClose }: 
         </button>
       )}
 
+      {!collapsed && (
+        <a
+          href="https://wa.me/5588988557247?text=Ol%C3%A1%2C+preciso+de+suporte+com+o+MyClinica."
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.supportRow}
+        >
+          <span className={styles.supportIcon}>💬</span>
+          <span>Suporte via WhatsApp</span>
+        </a>
+      )}
+      {collapsed && (
+        <a
+          href="https://wa.me/5588988557247?text=Ol%C3%A1%2C+preciso+de+suporte+com+o+MyClinica."
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.supportBtn}
+          title="Suporte via WhatsApp"
+        >
+          💬
+        </a>
+      )}
+
       <div className={`${styles.footer} ${collapsed ? styles.footerCollapsed : ''}`}>
         {collapsed && (
           <button className={styles.themeBtn} onClick={toggleTheme} title={theme === 'dark' ? 'Tema claro' : 'Tema escuro'}>

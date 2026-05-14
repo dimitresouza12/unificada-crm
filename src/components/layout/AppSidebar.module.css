@@ -294,6 +294,40 @@
 }
 .logoutBtn:hover { color: #f87171; }
 
+.supportRow {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0 0.75rem 0.5rem;
+  padding: 0.525rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: none;
+  border: 1px solid #25D36644;
+  color: #25D366;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.supportRow:hover { background: #25D36611; }
+.supportIcon { font-size: 0.95rem; }
+
+.supportBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem;
+  font-size: 1rem;
+  border-radius: var(--radius-xs);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.supportBtn:hover { opacity: 0.75; }
+
 /* ─── Mobile ─────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
