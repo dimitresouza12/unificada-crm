@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/auth'
@@ -53,7 +53,7 @@ function toSlug(name: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const setSession = useAuthStore((s) => s.setSession)
   const clearSession = useAuthStore((s) => s.clearSession)
   const searchParams = useSearchParams()
@@ -429,5 +429,13 @@ export default function LoginPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }} />}>
+      <LoginContent />
+    </Suspense>
   )
 }
