@@ -390,3 +390,41 @@
   .stats  { grid-template-columns: repeat(2, 1fr); }
   .panel  { max-width: 100%; }
 }
+
+/* Gate — automação não configurada */
+.gateBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  max-width: 480px;
+  margin: 0 auto;
+}
+.gateIcon { font-size: 3rem; line-height: 1; }
+.gateTitle { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); }
+.gateSub { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; max-width: 360px; }
+.btnOrcamento {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+  transition: opacity .15s, transform .1s;
+  margin-top: 0.5rem;
+}
+.btnOrcamento:hover { opacity: .9; transform: translateY(-1px); }

@@ -51,11 +51,14 @@ function fmtPhone(phone: string) {
   return phone
 }
 
+const WHATSAPP_ORCAMENTO = 'https://wa.me/5588988557247?text=Ol%C3%A1%2C+gostaria+de+fazer+um+or%C3%A7amento+para+integrar+o+CRM+com+WhatsApp+IA.'
+
 export default function CRMPage() {
   const { clinic } = useAuthStore()
   const router = useRouter()
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
+  const [automacaoAtiva, setAutomacaoAtiva] = useState<boolean | null>(null)
   const [selected, setSelected] = useState<Lead | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [msgLoading, setMsgLoading] = useState(false)
@@ -73,12 +76,12 @@ export default function CRMPage() {
   useEffect(() => {
     if (!clinic?.id || clinic.plan !== 'plus') return
     setLeads([])
+    setAutomacaoAtiva(null)
     loadLeads()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clinic?.id])
   useEffect(() => {
     if (!clinic?.id || clinic.plan !== 'plus') return
-    // Reset ao trocar de clínica (a lista de pacientes existentes é por clínica)
     setExistingPatients(new Set())
     loadExistingPatients()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,9 +109,11 @@ export default function CRMPage() {
         .eq('clinic_slug', slug)
         .order('created_at', { ascending: false })
       if (error) console.error('[CRM] chats query error:', error)
-      console.log('[CRM] slug:', slug, '| rows:', data?.length ?? 0)
       const rows = (data ?? []) as Lead[]
-      setLeads(rows.filter(r => r.phone && r.phone !== '=' && r.phone.length > 5))
+      const filtered = rows.filter(r => r.phone && r.phone !== '=' && r.phone.length > 5)
+      setLeads(filtered)
+      // Se a query retornou sem erro mas sem nenhum registro, automação não está configurada
+      setAutomacaoAtiva(!error && (data?.length ?? 0) > 0)
     } finally {
       setLoading(false)
     }
@@ -213,6 +218,23 @@ export default function CRMPage() {
 
       {loading ? (
         <p className={styles.loading}>Carregando leads...</p>
+      ) : automacaoAtiva === false ? (
+        <div className={styles.gateBox}>
+          <div className={styles.gateIcon}>🤖</div>
+          <h2 className={styles.gateTitle}>Automação WhatsApp não configurada</h2>
+          <p className={styles.gateSub}>
+            O CRM com IA é exclusivo do plano Plus e requer a integração com o bot WhatsApp da sua clínica.
+            Entre em contato para fazer um orçamento e ativar o serviço.
+          </p>
+          <a
+            href={WHATSAPP_ORCAMENTO}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.btnOrcamento}
+          >
+            💬 Fazer orçamento pelo WhatsApp
+          </a>
+        </div>
       ) : (
         <div className={styles.kanban}>
           {COLUMNS.map(col => {
